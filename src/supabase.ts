@@ -4,8 +4,8 @@ import { DEFAULT_SETTINGS } from './utils/storage';
 import { DEFAULT_MEMBERS } from './data/defaultMembers';
 
 const meta = import.meta as any;
-const SUPABASE_URL = meta.env?.VITE_SUPABASE_URL || 'https://ubroyskoxaixstgaralk.supabase.co';
-const SUPABASE_ANON_KEY = meta.env?.VITE_SUPABASE_ANON_KEY || 'sb_publishable_RlcLKqaolsJICII3RenSsw_tASy-txz';
+const SUPABASE_URL = meta.env?.VITE_SUPABASE_URL || 'https://tabpszknhdylpxnugxkk.supabase.co';
+const SUPABASE_ANON_KEY = meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhYnBzemtuaGR5bHB4bnVneGtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MDMwMjMsImV4cCI6MjEwNjk3OTAyM30.M1oXeWHHrlQljIPWuXDzA4dN9yhKu08MwpuePcgaSaE';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

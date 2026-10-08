@@ -24,18 +24,29 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
   onClearQueue,
   onMarkPrinted,
 }) => {
-  const [selectedIds, setSelectedIds] = useState<string[]>(queue.map(q => q.id));
+  const [sourceType, setSourceType] = useState<'queue' | 'allRecords'>(
+    queue.length > 0 ? 'queue' : 'allRecords'
+  );
+  const activeList = sourceType === 'queue' ? queue : allRecords;
+
+  const [selectedIds, setSelectedIds] = useState<string[]>(activeList.map(q => q.id));
   const [showSettings, setShowSettings] = useState(false);
 
   // 현재 인쇄할 대상 목록
-  const printItems = queue.filter(item => selectedIds.includes(item.id));
+  const printItems = activeList.filter(item => selectedIds.includes(item.id));
+
+  const switchSource = (type: 'queue' | 'allRecords') => {
+    setSourceType(type);
+    const list = type === 'queue' ? queue : allRecords;
+    setSelectedIds(list.map(i => i.id));
+  };
 
   // 전체 선택/해제
   const toggleSelectAll = () => {
-    if (selectedIds.length === queue.length) {
+    if (selectedIds.length === activeList.length && activeList.length > 0) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(queue.map(q => q.id));
+      setSelectedIds(activeList.map(q => q.id));
     }
   };
 
@@ -284,23 +295,50 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
       </div>
 
       {/* 인쇄 대기열 목록 & 선택 영역 */}
+      {/* 인쇄 대상 목록 & 선택 영역 */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 데이터 출처 탭 (대기열 vs 당일 접수자 전체) */}
+            <div className="inline-flex p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => switchSource('queue')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  sourceType === 'queue'
+                    ? 'bg-white text-sky-800 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                인쇄 대기열 ({queue.length}명)
+              </button>
+              <button
+                type="button"
+                onClick={() => switchSource('allRecords')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  sourceType === 'allRecords'
+                    ? 'bg-white text-sky-800 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                당일 접수자 전체 ({allRecords.length}명)
+              </button>
+            </div>
+
             <button
               onClick={toggleSelectAll}
-              className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900"
+              className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 ml-1 px-2.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 transition-all"
             >
-              {selectedIds.length === queue.length && queue.length > 0 ? (
+              {selectedIds.length === activeList.length && activeList.length > 0 ? (
                 <CheckSquare className="w-4 h-4 text-sky-600" />
               ) : (
                 <Square className="w-4 h-4 text-slate-400" />
               )}
-              전체 선택 ({selectedIds.length} / {queue.length})
+              전체 선택 ({selectedIds.length} / {activeList.length})
             </button>
           </div>
 
-          {queue.length > 0 && (
+          {sourceType === 'queue' && queue.length > 0 && (
             <button
               onClick={onClearQueue}
               className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 font-semibold"
@@ -311,17 +349,21 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
           )}
         </div>
 
-        {queue.length === 0 ? (
+        {activeList.length === 0 ? (
           <div className="py-16 text-center text-slate-400 space-y-3">
             <Printer className="w-12 h-12 mx-auto text-slate-300 stroke-[1.5]" />
-            <p className="text-sm font-semibold">인쇄 대기열에 담긴 명찰이 없습니다.</p>
+            <p className="text-sm font-semibold">
+              {sourceType === 'queue'
+                ? '인쇄 대기열에 담긴 명찰이 없습니다.'
+                : '오늘 접수된 회원이 아직 없습니다.'}
+            </p>
             <p className="text-xs text-slate-400">
-              [현장 접수] 탭에서 종친을 검색하여 접수하거나 [인쇄 대기열 추가]를 진행해 주세요.
+              [현장 접수] 탭에서 원하는 종친의 체크박스를 눌러 바로 일괄 인쇄하거나 대기열에 담으실 수 있습니다.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {queue.map((item) => {
+            {activeList.map((item) => {
               const isSelected = selectedIds.includes(item.id);
               return (
                 <div
@@ -333,18 +375,20 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
                       : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
                   }`}
                 >
-                  <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRemoveFromQueue(item.id);
-                      }}
-                      className="p-1 text-slate-400 hover:text-red-500 rounded-md"
-                      title="대기열에서 삭제"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {sourceType === 'queue' && (
+                    <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveFromQueue(item.id);
+                        }}
+                        className="p-1 text-slate-400 hover:text-red-500 rounded-md"
+                        title="대기열에서 삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2 mb-2">
                     <div
@@ -361,7 +405,7 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
                     </span>
                   </div>
 
-                  {/* 작은 라벨 미리보기 (비율 유지 축소로 상/하단 문구 잘림 100% 방지) */}
+                  {/* 작은 라벨 미리보기 */}
                   <div className="w-full bg-slate-100 py-1.5 px-0.5 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden h-[180px]">
                     <div className="transform scale-[0.72] origin-center shrink-0">
                       <LabelCard

@@ -55,6 +55,8 @@ export const App: React.FC = () => {
 
   // 즉시 1건 인쇄용 상태
   const [singlePrintItem, setSinglePrintItem] = useState<AttendanceRecord | null>(null);
+  // 즉시 다중 일괄 인쇄용 상태
+  const [batchPrintItems, setBatchPrintItems] = useState<AttendanceRecord[] | null>(null);
 
   // [클라우드 실시간 동기화 & 초기 데이터 로드]
   useEffect(() => {
@@ -203,6 +205,17 @@ export const App: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [singlePrintItem]);
+
+  // 다중 일괄 즉시 인쇄 트리거
+  useEffect(() => {
+    if (batchPrintItems && batchPrintItems.length > 0) {
+      const timer = setTimeout(() => {
+        window.print();
+        setBatchPrintItems(null);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [batchPrintItems]);
 
   // 통계 계산
   const totalAttendance = attendance.length;
@@ -378,6 +391,23 @@ export const App: React.FC = () => {
     setSinglePrintItem(record);
   };
 
+  // [4-1] 다중 라벨 일괄 즉시 인쇄
+  const handleBatchPrint = (records: AttendanceRecord[]) => {
+    if (records.length === 0) return;
+    setBatchPrintItems(records);
+  };
+
+  // [4-2] 다중 라벨 대기열 일괄 담기
+  const handleAddToQueue = (records: AttendanceRecord[]) => {
+    if (records.length === 0) return;
+    setPrintQueue((prev) => {
+      const existingMemberIds = new Set(prev.map((p) => p.memberId));
+      const newItems = records.filter((r) => !existingMemberIds.has(r.memberId));
+      return [...newItems, ...prev];
+    });
+    alert(`선택하신 ${records.length}명이 [명찰 인쇄 센터] 대기열에 추가되었습니다.`);
+  };
+
   // [4] 대기열 관리
   const handleRemoveFromQueue = (id: string) => {
     setPrintQueue((prev) => prev.filter((p) => p.id !== id));
@@ -468,9 +498,12 @@ export const App: React.FC = () => {
           <CheckinDesk
             members={members}
             attendanceRecords={attendance}
+            settings={settings}
             onOpenCheckin={(member) => setCheckinTarget(member)}
             onOpenNewMember={() => setIsNewMemberOpen(true)}
             onQuickPrint={handleQuickPrint}
+            onBatchPrint={handleBatchPrint}
+            onAddToQueue={handleAddToQueue}
             onEditMember={(member) => setEditTarget(member)}
           />
         )}
@@ -514,9 +547,12 @@ export const App: React.FC = () => {
         {activeTab === 'members' && (
           <MemberList
             members={members}
+            settings={settings}
             onUpdateMembers={setMembers}
             onResetToDefault={handleResetMembersToDefault}
             onEditMember={(member) => setEditTarget(member)}
+            onBatchPrint={handleBatchPrint}
+            onAddToQueue={handleAddToQueue}
           />
         )}
       </main>
@@ -576,13 +612,19 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* 즉시 단일 인쇄 전용 숨김 컨테이너 */}
-      {singlePrintItem && (
+      {/* 즉시 단일 또는 다중 일괄 인쇄 전용 숨김 컨테이너 */}
+      {(singlePrintItem || (batchPrintItems && batchPrintItems.length > 0)) && (
         <div className="hidden print:block print:w-full">
           {settings.paperSize === 'formtec_3114' ? (
-            <PrintSheetFormtec items={[singlePrintItem]} settings={settings} />
+            <PrintSheetFormtec
+              items={singlePrintItem ? [singlePrintItem] : (batchPrintItems || [])}
+              settings={settings}
+            />
           ) : (
-            <PrintSingleLabel items={[singlePrintItem]} settings={settings} />
+            <PrintSingleLabel
+              items={singlePrintItem ? [singlePrintItem] : (batchPrintItems || [])}
+              settings={settings}
+            />
           )}
         </div>
       )}

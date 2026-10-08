@@ -3,23 +3,45 @@ import { Member, AttendanceRecord, LabelSettings } from '../types';
 import { BRANCHES } from '../data/defaultMembers';
 import { matchKorean } from '../utils/hangul';
 import { loadAttendanceHistory } from '../utils/storage';
-import { Search, UserPlus, CheckCircle, Clock, Printer, Filter, Phone, MapPin, Briefcase, Edit3, Calendar } from 'lucide-react';
+import {
+  Search,
+  UserPlus,
+  CheckCircle,
+  Clock,
+  Printer,
+  Filter,
+  Phone,
+  MapPin,
+  Briefcase,
+  Edit3,
+  Calendar,
+  CheckSquare,
+  Square,
+  ListPlus,
+  X,
+} from 'lucide-react';
 
 interface CheckinDeskProps {
   members: Member[];
   attendanceRecords: AttendanceRecord[];
+  settings: LabelSettings;
   onOpenCheckin: (member: Member) => void;
   onOpenNewMember: () => void;
   onQuickPrint: (record: AttendanceRecord) => void;
+  onBatchPrint: (records: AttendanceRecord[]) => void;
+  onAddToQueue: (records: AttendanceRecord[]) => void;
   onEditMember: (member: Member) => void;
 }
 
 export const CheckinDesk: React.FC<CheckinDeskProps> = ({
   members,
   attendanceRecords,
+  settings,
   onOpenCheckin,
   onOpenNewMember,
   onQuickPrint,
+  onBatchPrint,
+  onAddToQueue,
   onEditMember,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,6 +106,74 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
   const displayList = useMemo(() => {
     return filteredMembers.slice(0, searchQuery || onlyCheckedIn ? 100 : 40);
   }, [filteredMembers, searchQuery, onlyCheckedIn]);
+
+  // 다중 선택 상태 (선택된 memberId Set)
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<number>>(new Set());
+
+  // 현재 화면에 표시된 목록 전체 선택 여부
+  const isAllSelected =
+    displayList.length > 0 &&
+    displayList.every((m) => selectedMemberIds.has(m.id));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedMemberIds(new Set());
+    } else {
+      setSelectedMemberIds(new Set(displayList.map((m) => m.id)));
+    }
+  };
+
+  const toggleSelectMember = (id: number) => {
+    setSelectedMemberIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  // 선택된 종친들을 출력용 AttendanceRecord[] 로 변환 (접수 기록이 없으면 원부 정보로 임시 생성)
+  const getSelectedRecords = (): AttendanceRecord[] => {
+    return Array.from(selectedMemberIds).map((id) => {
+      const checkedIn = checkedInMap.get(id);
+      if (checkedIn) return checkedIn;
+      const m = members.find((mem) => mem.id === id);
+      return {
+        id: `sel-${id}-${Date.now()}`,
+        memberId: id,
+        name: m?.name || '',
+        branch: m?.branch || '고성이씨',
+        generation: m?.generation || '',
+        role: m?.role || '',
+        job: m?.job || '',
+        feeAmount: 0,
+        paymentMethod: '현금',
+        notes: '',
+        timestamp: new Date().toISOString(),
+        year: settings.eventYear || 2026,
+        eventName: settings.eventName || '',
+        isNewMember: false,
+        printedCount: 0,
+        printSlot: 1,
+      };
+    });
+  };
+
+  const handleBatchPrint = () => {
+    const records = getSelectedRecords();
+    if (records.length === 0) return;
+    onBatchPrint(records);
+  };
+
+  const handleAddToQueue = () => {
+    const records = getSelectedRecords();
+    if (records.length === 0) return;
+    onAddToQueue(records);
+    setSelectedMemberIds(new Set());
+  };
 
   return (
     <div className="space-y-6">
@@ -165,10 +255,73 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
         </div>
       </div>
 
-      {/* 2. 검색 결과 목록 */}
+      {/* 2. 검색 결과 목록 & 일괄 선택 인쇄 */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* 상단 다중 선택 인쇄 액션 바 (1명 이상 선택 시 즉시 펼쳐짐) */}
+        {selectedMemberIds.size > 0 && (
+          <div className="p-3.5 bg-sky-700 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <span className="bg-white text-sky-900 text-xs font-black px-2.5 py-1 rounded-lg shadow-sm">
+                {selectedMemberIds.size}명 선택됨
+              </span>
+              <span className="text-xs text-sky-100 font-medium hidden md:inline">
+                원하는 종친을 체크하여 한 번에 폼텍/감열 라벨로 일괄 인쇄하거나 대기열에 담으세요.
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleBatchPrint}
+                className="px-4 py-2 text-xs font-extrabold text-sky-950 bg-amber-300 hover:bg-amber-200 active:scale-95 rounded-xl shadow flex items-center gap-1.5 transition-all"
+              >
+                <Printer className="w-4 h-4 text-sky-900" />
+                선택한 {selectedMemberIds.size}명 바로 일괄 인쇄하기
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAddToQueue}
+                className="px-3.5 py-2 text-xs font-bold text-white bg-sky-800 hover:bg-sky-900 border border-sky-500 rounded-xl flex items-center gap-1.5 transition-all"
+                title="인쇄 센터 대기열에 추가"
+              >
+                <ListPlus className="w-4 h-4 text-sky-200" />
+                대기열에 담기
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedMemberIds(new Set())}
+                className="px-2.5 py-2 text-xs font-semibold text-sky-200 hover:text-white rounded-xl hover:bg-sky-800/60 transition-all flex items-center gap-1"
+              >
+                <X className="w-3.5 h-3.5" />
+                선택 해제
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 font-semibold">
           <div className="flex items-center gap-3">
+            {/* 전체 선택 체크박스 버튼 */}
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-lg border transition-all ${
+                isAllSelected
+                  ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+              }`}
+              title={isAllSelected ? '전체 선택 해제' : '목록 전체 선택'}
+            >
+              {isAllSelected ? (
+                <CheckSquare className="w-4 h-4" />
+              ) : (
+                <Square className="w-4 h-4 text-slate-400" />
+              )}
+              <span>전체 선택</span>
+            </button>
+
             <span>
               검색 결과: <strong className="text-slate-900">{filteredMembers.length}</strong>명
               {filteredMembers.length > displayList.length && ` (상위 ${displayList.length}명 표시 중)`}
@@ -212,16 +365,36 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
           <div className="divide-y divide-slate-100">
             {displayList.map((member) => {
               const checkedIn = checkedInMap.get(member.id);
+              const isSelected = selectedMemberIds.has(member.id);
 
               return (
                 <div
                   key={member.id}
                   className={`p-4 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-                    checkedIn ? 'bg-emerald-50/40' : 'hover:bg-slate-50/80'
+                    isSelected
+                      ? 'bg-sky-50/80 border-l-4 border-l-sky-500'
+                      : checkedIn
+                      ? 'bg-emerald-50/40'
+                      : 'hover:bg-slate-50/80'
                   }`}
                 >
-                  {/* 종친 기본 정보 */}
-                  <div className="space-y-1">
+                  <div className="flex items-start gap-3 w-full sm:w-auto">
+                    {/* 종친 선택 체크박스 */}
+                    <button
+                      type="button"
+                      onClick={() => toggleSelectMember(member.id)}
+                      className="p-1 mt-0.5 rounded hover:bg-slate-200/50 text-slate-400 hover:text-sky-600 transition-colors shrink-0"
+                      title={isSelected ? '선택 해제' : '인쇄 대상 선택'}
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-5 h-5 text-sky-600 fill-sky-100" />
+                      ) : (
+                        <Square className="w-5 h-5 text-slate-300 hover:text-slate-400" />
+                      )}
+                    </button>
+
+                    {/* 종친 기본 정보 */}
+                    <div className="space-y-1">
                     <div className="flex items-center gap-2.5">
                       <span className="text-lg font-black text-slate-900 tracking-wide">
                         {member.name}
@@ -296,8 +469,9 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
                       );
                     })()}
                   </div>
+                </div>
 
-                  {/* 우측 접수 상태 및 액션 버튼 */}
+                {/* 우측 접수 상태 및 액션 버튼 */}
                   <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                     {/* 정보 수정 버튼 (연락처 8206 vs 9206 등 즉시 수정) */}
                     <button
@@ -352,6 +526,47 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
           </div>
         )}
       </div>
+
+      {/* 화면 하단 고정 플로팅 일괄 인쇄 바 (스크롤 중에도 1클릭 즉시 인쇄 가능) */}
+      {selectedMemberIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md border border-slate-700 flex flex-wrap items-center justify-center gap-3.5 animate-in slide-in-from-bottom-5">
+          <div className="flex items-center gap-2">
+            <span className="bg-sky-500 text-white font-black text-xs px-2.5 py-1 rounded-full shadow-xs">
+              {selectedMemberIds.size}명
+            </span>
+            <span className="text-xs font-bold text-slate-200">선택 완료</span>
+          </div>
+
+          <div className="h-4 w-px bg-slate-700 hidden sm:block" />
+
+          <button
+            type="button"
+            onClick={handleBatchPrint}
+            className="px-4 py-2 bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+          >
+            <Printer className="w-4 h-4 text-slate-950" />
+            선택한 {selectedMemberIds.size}명 바로 일괄 인쇄
+          </button>
+
+          <button
+            type="button"
+            onClick={handleAddToQueue}
+            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-600 flex items-center gap-1.5 transition-all"
+          >
+            <ListPlus className="w-4 h-4 text-sky-300" />
+            대기열 담기
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedMemberIds(new Set())}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors"
+            title="선택 해제"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

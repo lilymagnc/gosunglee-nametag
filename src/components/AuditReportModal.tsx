@@ -161,10 +161,11 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
               color: #333333;
             }
             .main-title {
-              font-size: 24px;
+              font-size: 21px;
               font-weight: 900;
-              letter-spacing: 2px;
+              letter-spacing: -0.5px;
               margin: 6px 0;
+              white-space: nowrap;
             }
             .event-meta {
               display: flex;
@@ -478,7 +479,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/75 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
         {/* 헤더 */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-2.5">
@@ -591,11 +592,14 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
 
         {/* 미리보기 본문 (스크롤) */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-100 flex justify-center">
-          <div className="w-full max-w-[210mm] bg-white p-8 sm:p-12 shadow-lg border border-slate-200 text-slate-900 font-serif space-y-6">
+          <div className="w-full max-w-[210mm] bg-white p-6 sm:p-10 shadow-lg border border-slate-200 text-slate-900 font-serif space-y-6">
             {/* 타이틀 */}
             <div className="text-center border-b-2 border-slate-900 pb-4">
               <div className="text-sm font-bold tracking-widest text-slate-600">固 城 李 氏 서 울 宗 親 會</div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-wider my-2 text-slate-900">
+              <h1
+                className="text-lg sm:text-xl md:text-2xl font-black my-2 text-slate-900 whitespace-nowrap overflow-hidden text-ellipsis"
+                style={{ letterSpacing: '-0.5px' }}
+              >
                 {event.name} 수지 결산 및 감사 보고서
               </h1>
               <div className="flex justify-between text-xs font-sans text-slate-500 mt-2">

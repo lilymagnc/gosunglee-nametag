@@ -468,22 +468,21 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
               )}
             </div>
 
-            {/* 종친회 직책 설정 */}
+            {/* 직책 설정 */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                  <Crown className="w-3.5 h-3.5 text-amber-600" />
-                  종친회 직책 (명찰 인쇄용)
+                  직책 (명찰 표기)
                 </label>
                 {editJob && (
                   <span className="text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
                     <Briefcase className="w-3 h-3 text-slate-400" />
-                    사회 생업: {editJob.replace(/\n/g, ' ')}
+                    직업/생업: {editJob.replace(/\n/g, ' ')}
                   </span>
                 )}
               </div>
               <p className="text-[10px] text-slate-400 mb-1.5">
-                💡 명찰에는 회사 직급이 아닌 <strong>종친회 임원 직책(회장, 부회장, 감사, 이사 등)</strong>만 인쇄됩니다.
+                💡 명찰에 표기할 직책(이사, 회장, 부회장, 감사 등)을 선택하거나 입력합니다.
               </p>
               <div className="flex gap-2">
                 <select

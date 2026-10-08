@@ -526,9 +526,8 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
                         {member.branch} {member.generation ? `${member.generation}세` : ''}
                       </span>
                       {member.role && (
-                        <span className="text-xs font-extrabold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
-                          <Crown className="w-3.5 h-3.5 text-amber-600" />
-                          <span>종친회 직책: {member.role}</span>
+                        <span className="text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                          <span>{member.role}</span>
                         </span>
                       )}
                       {member.isCustom && (

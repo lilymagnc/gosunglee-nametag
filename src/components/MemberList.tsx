@@ -533,10 +533,10 @@ export const MemberList: React.FC<MemberListProps> = ({
                 <th className="px-3.5 py-2.5">성명</th>
                 <th className="px-3.5 py-2.5">공파</th>
                 <th className="px-3.5 py-2.5 text-center">세수</th>
-                <th className="px-3.5 py-2.5">직책 / 직업</th>
+                <th className="px-3.5 py-2.5">종친회 직책</th>
                 <th className="px-3.5 py-2.5 text-center">출석 / 명찰</th>
                 <th className="px-3.5 py-2.5">연락처</th>
-                <th className="px-3.5 py-2.5">거주지 주소</th>
+                <th className="px-3.5 py-2.5">거주지 주소 / 생업</th>
                 <th className="px-3.5 py-2.5 text-center">구분</th>
                 <th className="px-3.5 py-2.5 text-center">수정</th>
               </tr>
@@ -580,24 +580,10 @@ export const MemberList: React.FC<MemberListProps> = ({
                         {m.generation ? `${m.generation}세` : '-'}
                       </td>
                       <td className="px-3.5 py-2">
-                        {m.role && m.job ? (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded text-[11px] w-fit flex items-center gap-1">
-                              <Crown className="w-3 h-3 text-amber-600" />
-                              {m.role}
-                            </span>
-                            <span className="text-slate-500 text-[11px] whitespace-pre-line">
-                              {m.job.replace('\n', ' ')}
-                            </span>
-                          </div>
-                        ) : m.role ? (
-                          <span className="font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded text-[11px] flex items-center gap-1 w-fit">
+                        {m.role ? (
+                          <span className="font-extrabold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full text-[11px] flex items-center gap-1 w-fit shadow-2xs">
                             <Crown className="w-3 h-3 text-amber-600" />
                             {m.role}
-                          </span>
-                        ) : m.job ? (
-                          <span className="text-slate-600 text-[11px] whitespace-pre-line">
-                            {m.job.replace('\n', ' ')}
                           </span>
                         ) : (
                           <span className="text-slate-300">-</span>
@@ -620,8 +606,15 @@ export const MemberList: React.FC<MemberListProps> = ({
                         )}
                       </td>
                       <td className="px-3.5 py-2 font-mono text-[11px]">{m.mobile || m.phone || '-'}</td>
-                      <td className="px-3.5 py-2 truncate max-w-[200px]" title={m.address || ''}>
-                        {m.address || '-'}
+                      <td className="px-3.5 py-2 max-w-[220px]">
+                        <div className="truncate text-slate-700" title={m.address || ''}>
+                          {m.address || '-'}
+                        </div>
+                        {m.job && (
+                          <div className="text-[10px] text-slate-400 truncate mt-0.5" title={m.job}>
+                            생업: {m.job.replace(/\n/g, ' ')}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3.5 py-2 text-center">
                         {m.isCustom ? (

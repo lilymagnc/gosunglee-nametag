@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Printer, Sparkles, Languages, ZoomIn, ZoomOut, Check } from 'lucide-react';
+import { X, Printer, Sparkles, Languages, ZoomIn, ZoomOut, Check, Maximize2 } from 'lucide-react';
 
 interface SponsorshipBannerModalProps {
   isOpen: boolean;
@@ -12,10 +12,13 @@ interface SponsorshipBannerModalProps {
 
 /**
  * 80mm 영수증 감열지 연속 롤 전용 세로형 협찬금/지원금 리본 출력 모달
- * 규격: 너비 80mm × 세로 600~700mm
- * 십만원대 기본: [1 0 만 원]
- * 백만원대 기본: [1 百 萬 圓] (A안)
- * 어르신 요청 시: [한자 萬/圓] 원클릭 변환 지원 (예: 1 0 萬 圓)
+ * 
+ * [개선된 핵심 스펙]
+ * 1. 로고: 너비 68mm로 웅장하게 확대 (용지 폭 80mm의 85% 이상 점유)
+ * 2. 금액(세로쓰기): 글자당 너비 72mm, font-size 50mm (여백 제외 전폭 꽉 채움)
+ * 3. 문파 / 세수: 2줄 대형 괘선 블록 (1행 문파 font-size 13mm, 2행 세수 font-size 15mm)
+ * 4. 성명(세로쓰기): 글자당 너비 72mm, font-size 56mm (여백 제외 전폭 꽉 채움)
+ * 5. 600~650mm 롤 용지에 빈 공간 없이 시원하고 묵직하게 가득 채움!
  */
 export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
   isOpen,
@@ -54,7 +57,7 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
   const [amountText, setAmountText] = useState(getSmartInitialAmount(initialAmount));
   const [bannerLengthMm, setBannerLengthMm] = useState<number>(650); // 600, 650, 700mm
   const [fontFamily, setFontFamily] = useState<'gungsuh' | 'myeongjo'>('gungsuh');
-  const [zoomScale, setZoomScale] = useState<number>(0.85);
+  const [zoomScale, setZoomScale] = useState<number>(0.55); // 전체가 한눈에 들어오는 기본 배율
 
   useEffect(() => {
     if (isOpen) {
@@ -71,7 +74,7 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
 
   if (!isOpen) return null;
 
-  // 프리셋 목록: 10만원대(1 0 만 원) vs 100만원대(1 百 萬 圓)
+  // 프리셋 목록
   const presets = [
     { label: '10만원', text: '1 0 만 원', highlight: false },
     { label: '20만원', text: '2 0 만 원', highlight: false },
@@ -88,14 +91,12 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
   const toggleHanjaHangeul = () => {
     let current = amountText;
     if (current.includes('萬') || current.includes('圓') || current.includes('百') || current.includes('千')) {
-      // 한자 -> 한글 변환
       current = current
         .replace(/百/g, '백')
         .replace(/千/g, '천')
         .replace(/萬/g, '만')
         .replace(/圓/g, '원');
     } else {
-      // 한글 -> 한자 변환 (1 0 만 원 -> 1 0 萬 圓, 백 -> 百, 천 -> 千)
       current = current
         .replace(/백/g, '百')
         .replace(/천/g, '千')
@@ -108,9 +109,12 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
   // 세로 문자 배열 추출
   const amountChars = Array.from(amountText.replace(/\s+/g, ''));
   const nameChars = Array.from(name.replace(/\s+/g, ''));
-  const branchGenText = `${branch} ${generation}`.trim();
 
-  // 실제 인쇄 실행 (히든 iframe으로 메인 화면 및 일반 명찰 설정 간섭 없이 80mm x 650mm 독립 출력)
+  // 문파 및 세수 텍스트 정제
+  const cleanBranch = branch.trim();
+  const cleanGen = generation.trim();
+
+  // 실제 인쇄 실행 (히든 iframe으로 메인 화면 간섭 없이 80mm x 650mm 독립 출력)
   const handlePrint = () => {
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
@@ -126,8 +130,8 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
 
     const fontCss =
       fontFamily === 'gungsuh'
-        ? '"Gungsuh", "Batang", serif'
-        : '"Nanum Myeongjo", "Batang", serif';
+        ? "'ChosunGs', 'Gungsuh', '궁서', 'Batang', serif"
+        : "'Nanum Myeongjo', 'Batang', serif";
 
     const html = `
       <!DOCTYPE html>
@@ -136,6 +140,13 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
           <meta charset="utf-8" />
           <title>협찬금_${name}_${amountText.replace(/\s+/g, '')}</title>
           <style>
+            @font-face {
+              font-family: 'ChosunGs';
+              src: url('/fonts/ChosunGs.woff') format('woff'),
+                   url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@1.0/ChosunGs.woff') format('woff');
+              font-weight: normal;
+              font-style: normal;
+            }
             @page {
               size: 80mm ${bannerLengthMm}mm;
               margin: 0mm;
@@ -157,76 +168,125 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
               color: #000000;
               display: flex;
               flex-direction: column;
-              justify-content: space-between;
               align-items: center;
-              padding: 14mm 6mm 18mm 6mm;
-              border-left: 2px solid #000000;
-              border-right: 2px solid #000000;
+              padding: 6mm 4mm 10mm 4mm;
+              border-left: 2.5px solid #000000;
+              border-right: 2.5px solid #000000;
+              box-sizing: border-box;
             }
+            
+            /* 상단 밀착 그룹: 로고 + 금액 + 문파/세수 */
+            .top-group {
+              width: 100%;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            }
+
+            /* 1. 상단 대형 로고 */
             .logo-box {
+              width: 100%;
               text-align: center;
-              margin-bottom: 4mm;
+              margin-bottom: 1.5mm;
             }
             .logo-img {
-              width: 44mm;
+              width: 66mm;
+              max-width: 66mm;
               height: auto;
               display: block;
               margin: 0 auto;
             }
+
+            /* 2. 금액 세로쓰기 (로고와 가깝게 밀착) */
             .amount-section {
+              width: 100%;
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
-              gap: 4mm;
-              margin: 6mm 0;
+              gap: 1.5mm;
+              margin-top: 1mm;
+              margin-bottom: 2mm;
             }
             .amount-char {
-              font-size: 48pt;
+              width: 72mm;
+              font-size: 48mm;
               font-weight: 900;
-              line-height: 1;
+              line-height: 0.95;
+              text-align: center;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            /* 3. 문파 & 세수 2줄 대형 괘선 블록 (금액과 가깝게 밀착) */
+            .branch-gen-box {
+              width: 72mm;
+              text-align: center;
+              border-top: 3px solid #000000;
+              border-bottom: 3px solid #000000;
+              padding: 3.5mm 0 4mm 0;
+              margin-top: 2mm;
+            }
+            .branch-text {
+              font-size: 13mm;
+              font-weight: 900;
+              line-height: 1.15;
+              letter-spacing: 3mm;
               text-align: center;
             }
-            .branch-gen-section {
+            .gen-text {
+              font-size: 15mm;
+              font-weight: 900;
+              line-height: 1.15;
+              letter-spacing: 2mm;
               text-align: center;
-              font-size: 17pt;
-              font-weight: 800;
-              letter-spacing: 2px;
-              padding: 3.5mm 0;
-              border-top: 1.5px solid #000000;
-              border-bottom: 1.5px solid #000000;
-              width: 92%;
-              margin: 6mm 0;
+              margin-top: 2mm;
             }
+
+            /* 4. 성명: 남은 하단 공간 전체를 넉넉하게 띄어쓰기하여 꽉 채움 */
             .name-section {
+              flex: 1;
+              width: 100%;
               display: flex;
               flex-direction: column;
               align-items: center;
-              justify-content: center;
-              gap: 6mm;
-              margin: 8mm 0;
+              justify-content: space-evenly;
+              padding-top: 5mm;
+              padding-bottom: 5mm;
             }
             .name-char {
-              font-size: 58pt;
+              width: 72mm;
+              font-size: 58mm;
               font-weight: 900;
               line-height: 1;
               text-align: center;
+              display: flex;
+              align-items: center;
+              justify-content: center;
             }
           </style>
         </head>
         <body>
-          <div class="logo-box">
-            <img src="/logo-black.png" class="logo-img" alt="종문로고" />
-          </div>
-          
-          <div class="amount-section">
-            ${amountChars.map((c) => `<div class="amount-char">${c}</div>`).join('')}
+          <div class="top-group">
+            <!-- 1. 로고 -->
+            <div class="logo-box">
+              <img src="/logo-black.png" class="logo-img" alt="종문로고" />
+            </div>
+            
+            <!-- 2. 금액 -->
+            <div class="amount-section">
+              ${amountChars.map((c) => `<div class="amount-char">${c}</div>`).join('')}
+            </div>
+
+            <!-- 3. 문파 세수 2줄 -->
+            <div class="branch-gen-box">
+              <div class="branch-text">${cleanBranch}</div>
+              <div class="gen-text">${cleanGen}</div>
+            </div>
           </div>
 
-          <div class="branch-gen-section">
-            ${branchGenText}
-          </div>
-
+          <!-- 4. 성명 (남은 공간 균등 띄어쓰기) -->
           <div class="name-section">
             ${nameChars.map((c) => `<div class="name-char">${c}</div>`).join('')}
           </div>
@@ -251,9 +311,9 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/70 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[94vh] flex flex-col overflow-hidden border border-slate-200">
         {/* 모달 상단 헤더 */}
-        <div className="flex items-center justify-between px-5 py-4 bg-slate-900 text-white border-b border-slate-800">
+        <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white border-b border-slate-800">
           <div className="flex items-center gap-2.5">
             <span className="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
               <Sparkles className="w-5 h-5" />
@@ -262,11 +322,11 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
               <h2 className="text-lg font-bold flex items-center gap-2">
                 80mm 협찬금·지원금 리본 출력
                 <span className="text-xs bg-amber-400 text-slate-950 font-extrabold px-2 py-0.5 rounded-full">
-                  2번 영수증 프린터 전용
+                  전폭 꽉 채움 대형 세로쓰기
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                너비 80mm × 길이 {bannerLengthMm}mm 연속 감열지 롤 세로쓰기 출력
+                너비 80mm × 길이 {bannerLengthMm}mm 연속 롤 | 2번 영수증 프린터 전용
               </p>
             </div>
           </div>
@@ -281,7 +341,7 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
         {/* 본문 2컬럼 레이아웃: 좌측 설정 패널, 우측 실시간 프리뷰 */}
         <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden bg-slate-50">
           {/* 좌측: 입력 컨트롤러 (md: 5열) */}
-          <div className="md:col-span-5 p-5 space-y-5 overflow-y-auto border-r border-slate-200 bg-white">
+          <div className="md:col-span-5 p-5 space-y-4 overflow-y-auto border-r border-slate-200 bg-white">
             {/* 1. 성명 입력 */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -291,31 +351,35 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="예: 이기석"
+                placeholder="예: 이성원"
                 className="w-full px-3.5 py-2.5 text-base font-bold border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               />
             </div>
 
-            {/* 2. 공파 및 세수 */}
+            {/* 2. 공파 및 세수 (2줄 출력) */}
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">공파</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  1행: 공파명
+                </label>
                 <input
                   type="text"
                   value={branch}
                   onChange={(e) => setBranch(e.target.value)}
-                  placeholder="예: 호군공파"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                  placeholder="예: 둔재공파"
+                  className="w-full px-3 py-2 text-sm font-bold border border-slate-300 rounded-lg"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">세수</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  2행: 세수
+                </label>
                 <input
                   type="text"
                   value={generation}
                   onChange={(e) => setGeneration(e.target.value)}
-                  placeholder="예: 30세"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                  placeholder="예: 33세"
+                  className="w-full px-3 py-2 text-sm font-bold border border-slate-300 rounded-lg"
                 />
               </div>
             </div>
@@ -423,13 +487,13 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setFontFamily('gungsuh')}
-                    className={`py-1.5 text-xs font-bold rounded-lg border font-gungsuh cursor-pointer ${
+                    className={`py-1.5 text-xs font-bold rounded-lg border font-chosun cursor-pointer ${
                       fontFamily === 'gungsuh'
                         ? 'bg-sky-700 text-white border-sky-700'
                         : 'bg-white text-slate-700 border-slate-300'
                     }`}
                   >
-                    궁서체 (추천)
+                    조선궁서체 (추천)
                   </button>
                   <button
                     type="button"
@@ -447,7 +511,7 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
             </div>
 
             {/* 하단 인쇄 실행 버튼 */}
-            <div className="pt-4">
+            <div className="pt-3">
               <button
                 type="button"
                 onClick={handlePrint}
@@ -457,26 +521,45 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
                 <Printer className="w-5 h-5" />
                 <span>80mm 협찬금 리본 인쇄하기</span>
               </button>
-              <p className="text-[11px] text-center text-slate-400 mt-2">
+              <p className="text-[11px] text-center text-slate-400 mt-1.5">
                 💡 2번 영수증 프린터(80mm 롤)를 선택해 인쇄하시면 자동 컷팅됩니다.
               </p>
             </div>
           </div>
 
           {/* 우측: 실시간 80mm 리본 미리보기 (md: 7열) */}
-          <div className="md:col-span-7 p-6 flex flex-col items-center justify-center bg-slate-200/80 overflow-hidden relative">
-            {/* 확대/축소 컨트롤 */}
-            <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full shadow-sm border border-slate-300 text-xs font-bold text-slate-700">
+          <div className="md:col-span-7 p-4 sm:p-6 flex flex-col items-center justify-center bg-slate-200/80 overflow-hidden relative">
+            {/* 배율 조절 컨트롤 바 */}
+            <div className="absolute top-3 right-4 z-10 flex items-center gap-1 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-full shadow-md border border-slate-300 text-xs font-bold text-slate-700">
               <button
-                onClick={() => setZoomScale((prev) => Math.max(0.4, prev - 0.1))}
+                onClick={() => setZoomScale(0.35)}
+                className={`px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${
+                  zoomScale === 0.35 ? 'bg-slate-900 text-white' : 'hover:bg-slate-100 text-slate-600'
+                }`}
+                title="한눈에 전체 보기"
+              >
+                한눈에
+              </button>
+              <button
+                onClick={() => setZoomScale(0.55)}
+                className={`px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${
+                  zoomScale === 0.55 ? 'bg-slate-900 text-white' : 'hover:bg-slate-100 text-slate-600'
+                }`}
+                title="기본 배율"
+              >
+                기본
+              </button>
+              <div className="h-3 w-px bg-slate-300 mx-0.5" />
+              <button
+                onClick={() => setZoomScale((prev) => Math.max(0.25, prev - 0.05))}
                 className="p-1 hover:bg-slate-100 rounded cursor-pointer"
                 title="축소"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
-              <span className="w-12 text-center">{Math.round(zoomScale * 100)}%</span>
+              <span className="w-10 text-center font-mono">{Math.round(zoomScale * 100)}%</span>
               <button
-                onClick={() => setZoomScale((prev) => Math.min(1.2, prev + 0.1))}
+                onClick={() => setZoomScale((prev) => Math.min(1.0, prev + 0.05))}
                 className="p-1 hover:bg-slate-100 rounded cursor-pointer"
                 title="확대"
               >
@@ -484,12 +567,12 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
               </button>
             </div>
 
-            <div className="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1">
-              <span>📜 실물 리본 미리보기 (80mm × {bannerLengthMm}mm)</span>
+            <div className="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5 self-start pl-2">
+              <span>📜 실물 리본 전폭 꽉 채움 미리보기 (80mm × {bannerLengthMm}mm)</span>
             </div>
 
             {/* 스크롤 가능한 프리뷰 영역 */}
-            <div className="w-full h-[620px] overflow-y-auto flex items-start justify-center p-4">
+            <div className="w-full h-[640px] overflow-y-auto flex items-start justify-center p-2 rounded-xl bg-slate-300/50 border border-slate-300/80 shadow-inner">
               <div
                 style={{
                   transform: `scale(${zoomScale})`,
@@ -498,43 +581,88 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
                   minHeight: `${bannerLengthMm}mm`,
                   height: `${bannerLengthMm}mm`,
                   boxSizing: 'border-box',
+                  padding: '6mm 4mm 10mm 4mm',
                 }}
-                className={`bg-white text-black shadow-2xl flex flex-col justify-between items-center py-10 px-4 border-x-4 border-black transition-transform ${
-                  fontFamily === 'gungsuh' ? 'font-gungsuh' : 'font-myeongjo'
+                className={`bg-white text-black shadow-2xl flex flex-col items-center border-x-[3px] border-black transition-transform shrink-0 ${
+                  fontFamily === 'gungsuh' ? 'font-chosun' : 'font-myeongjo'
                 }`}
               >
-                {/* 1. 상단 종문 로고 */}
-                <div className="text-center pt-2">
-                  <img
-                    src="/logo-black.png"
-                    alt="종문로고"
-                    className="w-24 h-auto mx-auto object-contain"
-                  />
-                </div>
+                {/* 상단 밀착 그룹: 로고 + 금액 + 문파/세수 */}
+                <div className="w-full flex flex-col items-center">
+                  {/* 1. 상단 대형 종문 로고 */}
+                  <div className="w-full text-center mb-1">
+                    <img
+                      src="/logo-black.png"
+                      alt="종문로고"
+                      style={{ width: '66mm', maxWidth: '66mm' }}
+                      className="h-auto mx-auto object-contain block"
+                    />
+                  </div>
 
-                {/* 2. 금액 세로쓰기 (초대형) */}
-                <div className="flex flex-col items-center justify-center gap-4 my-4">
-                  {amountChars.map((ch, idx) => (
+                  {/* 2. 초대형 금액 세로쓰기 (로고와 가깝게 밀착) */}
+                  <div className="w-full flex flex-col items-center justify-center my-1 gap-[1.5mm]">
+                    {amountChars.map((ch, idx) => (
+                      <div
+                        key={`preview-amt-${idx}`}
+                        style={{
+                          width: '72mm',
+                          fontSize: '48mm',
+                          lineHeight: 0.95,
+                          height: '46mm',
+                        }}
+                        className="font-black text-center flex items-center justify-center tracking-tighter"
+                      >
+                        {ch}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 3. 문파 & 세수 2줄 대형 괘선 블록 (금액과 가깝게 밀착) */}
+                  <div
+                    style={{
+                      width: '72mm',
+                      borderTop: '3px solid black',
+                      borderBottom: '3px solid black',
+                      padding: '3.5mm 0 4mm 0',
+                      marginTop: '2mm',
+                    }}
+                    className="text-center"
+                  >
                     <div
-                      key={`preview-amt-${idx}`}
-                      className="text-6xl font-black leading-none tracking-normal"
+                      style={{
+                        fontSize: '13mm',
+                        lineHeight: 1.15,
+                        letterSpacing: '3mm',
+                      }}
+                      className="font-black text-center tracking-widest"
                     >
-                      {ch}
+                      {cleanBranch}
                     </div>
-                  ))}
+                    <div
+                      style={{
+                        fontSize: '15mm',
+                        lineHeight: 1.15,
+                        letterSpacing: '2mm',
+                        marginTop: '2mm',
+                      }}
+                      className="font-black text-center"
+                    >
+                      {cleanGen}
+                    </div>
+                  </div>
                 </div>
 
-                {/* 3. 공파 및 세수 (작고 단정하게) */}
-                <div className="text-center text-xl font-bold tracking-widest py-2 border-y-2 border-black w-11/12 my-3">
-                  {branchGenText}
-                </div>
-
-                {/* 4. 성명 세로쓰기 (초대형) */}
-                <div className="flex flex-col items-center justify-center gap-6 my-4 pb-4">
+                {/* 4. 성명: 남은 하단 공간 전체를 넉넉하게 띄어쓰기하여 꽉 채움 */}
+                <div className="w-full flex-1 flex flex-col items-center justify-evenly py-4">
                   {nameChars.map((ch, idx) => (
                     <div
                       key={`preview-name-${idx}`}
-                      className="text-7xl font-black leading-none tracking-normal"
+                      style={{
+                        width: '72mm',
+                        fontSize: '58mm',
+                        lineHeight: 1,
+                      }}
+                      className="font-black text-center flex items-center justify-center tracking-tighter"
                     >
                       {ch}
                     </div>

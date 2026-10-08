@@ -85,7 +85,7 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
     return getMemberHistory(member.id);
   }, [member.id]);
 
-  // member 또는 existingRecord, settings 변경 시 직전 설정 그대로 동기화
+  // 1. 회원이 바뀔 때만 폼 입력 필드 초기화 (settings 변경 시 입력 중이던 직책/회비 초기화 원천 방지!)
   useEffect(() => {
     if (existingRecord) {
       setRole(existingRecord.role || member.role || '');
@@ -109,9 +109,15 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
     setEditAddress(member.address || '');
     setEditJob(member.job || '');
     setIsEditingInfo(false);
-    setPaperSize(settings.paperSize || 'formtec_3114');
-    setPreviewThermal(settings.thermalMode || (settings.paperSize === 'formtec_3114' ? 'color' : 'inverted'));
-  }, [member, existingRecord, settings]);
+  }, [member.id, existingRecord?.id]);
+
+  // 2. 모달이 새로 열릴 때만 전역 용지 설정 동기화
+  useEffect(() => {
+    if (isOpen) {
+      setPaperSize(settings.paperSize || 'formtec_3114');
+      setPreviewThermal(settings.thermalMode || (settings.paperSize === 'formtec_3114' ? 'color' : 'inverted'));
+    }
+  }, [isOpen]);
 
   // 용지 변경 시 즉시 기억 및 전역 설정 저장
   const handlePaperSizeChange = (newSize: PaperSize) => {

@@ -170,8 +170,6 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
               flex-direction: column;
               align-items: center;
               padding: 6mm 4mm 10mm 4mm;
-              border-left: 2.5px solid #000000;
-              border-right: 2.5px solid #000000;
               box-sizing: border-box;
             }
             
@@ -583,7 +581,7 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
                   boxSizing: 'border-box',
                   padding: '6mm 4mm 10mm 4mm',
                 }}
-                className={`bg-white text-black shadow-2xl flex flex-col items-center border-x-[3px] border-black transition-transform shrink-0 ${
+                className={`bg-white text-black shadow-2xl flex flex-col items-center border border-slate-200 transition-transform shrink-0 ${
                   fontFamily === 'gungsuh' ? 'font-chosun' : 'font-myeongjo'
                 }`}
               >

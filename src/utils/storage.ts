@@ -297,6 +297,8 @@ export const SEED_EVENTS: EventRecord[] = [
     year: 2026,
     date: '2026-10-08',
     location: '서울 종친회관 대강당',
+    presidentName: '이 기 석',
+    auditors: ['이 종 춘', '이 원 구'],
     status: 'active',
     createdAt: '2026-01-01',
   },
@@ -306,6 +308,8 @@ export const SEED_EVENTS: EventRecord[] = [
     year: 2025,
     date: '2025-10-19',
     location: '선영 제실 및 시제터',
+    presidentName: '이 기 석',
+    auditors: ['이 종 춘', '이 원 구'],
     status: 'archived',
     createdAt: '2025-10-01',
   },
@@ -315,6 +319,8 @@ export const SEED_EVENTS: EventRecord[] = [
     year: 2024,
     date: '2024-03-24',
     location: '서울 종친회관 대강당',
+    presidentName: '이 기 석',
+    auditors: ['이 종 춘', '이 원 구'],
     status: 'archived',
     createdAt: '2024-03-01',
   },
@@ -325,7 +331,13 @@ export function loadEvents(): EventRecord[] {
     const data = localStorage.getItem(STORAGE_KEYS.EVENTS);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((ev) => ({
+          ...ev,
+          presidentName: ev.presidentName || '이 기 석',
+          auditors: ev.auditors && ev.auditors.length > 0 ? ev.auditors : ['이 종 춘', '이 원 구'],
+        }));
+      }
     }
   } catch (e) {
     console.error('Failed to load events from localStorage', e);
@@ -333,6 +345,24 @@ export function loadEvents(): EventRecord[] {
   // 기본 시드 이벤트 저장 후 반환
   saveEvents(SEED_EVENTS);
   return SEED_EVENTS;
+}
+
+const SECURITY_PIN_KEY = 'gosung_expense_menu_pin';
+
+export function getExpenseMenuPin(): string {
+  try {
+    return localStorage.getItem(SECURITY_PIN_KEY) || '1234';
+  } catch {
+    return '1234';
+  }
+}
+
+export function setExpenseMenuPin(pin: string): void {
+  try {
+    localStorage.setItem(SECURITY_PIN_KEY, pin);
+  } catch (e) {
+    console.error('Failed to set expense menu pin', e);
+  }
 }
 
 export function saveEvents(events: EventRecord[]): void {

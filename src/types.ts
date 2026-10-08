@@ -68,7 +68,9 @@ export interface EventRecord {
   name: string;            // 행사명 (e.g. "2026년 정기총회 및 시제")
   year: number;            // 연도 (e.g. 2026)
   date: string;            // 행사 일자 (e.g. "2026-10-08")
-  location?: string;        // 장소 (e.g. "서울 종친회관 대강당")
+  location?: string;       // 장소 (e.g. "서울 종친회관 대강당")
+  presidentName?: string;  // 행사 회장 성명 (기본값: "이 기 석")
+  auditors?: string[];     // 행사 감사 성명 목록 (기본값: ["이 종 춘", "이 원 구"])
   status: 'active' | 'archived'; // 진행 중 vs 보관됨
   createdAt: string;
 }

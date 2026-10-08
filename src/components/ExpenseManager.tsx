@@ -7,6 +7,7 @@ import {
   setActiveEventId,
   loadExpenses,
   saveExpenses,
+  getExpenseMenuPin,
 } from '../utils/storage';
 import { AuditReportModal } from './AuditReportModal';
 import {
@@ -33,6 +34,11 @@ import {
   ExternalLink,
   ChevronDown,
   Sparkles,
+  Lock,
+  Unlock,
+  KeyRound,
+  Settings,
+  Users,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -41,6 +47,17 @@ interface ExpenseManagerProps {
 }
 
 export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecords }) => {
+  // 0. 관리자 인증 잠금 상태 (기본 PIN: 1234, sessionStorage로 브라우저 세션 동안 유지)
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('gosung_expense_unlocked') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [pinInput, setPinInput] = useState<string>('');
+  const [pinError, setPinError] = useState<string>('');
+
   // 1. 행사 목록 및 활성 행사 상태
   const [events, setEvents] = useState<EventRecord[]>(loadEvents);
   const [selectedEventId, setSelectedEventId] = useState<string>(() => {
@@ -53,7 +70,8 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
   // 3. UI 모달 제어 상태
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState<boolean>(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseItem | null>(null);
-  const [isNewEventModalOpen, setIsNewEventModalOpen] = useState<boolean>(false);
+  const [isEventSettingsModalOpen, setIsEventSettingsModalOpen] = useState<boolean>(false);
+  const [eventModalMode, setEventModalMode] = useState<'create' | 'edit'>('create');
   const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
@@ -156,12 +174,116 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
     XLSX.writeFile(wb, `${currentEvent.name}_지출내역서.xlsx`);
   };
 
+  // 비밀번호 인증 핸들러 (기본: 1234)
+  const handleVerifyPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const correctPin = getExpenseMenuPin();
+    if (pinInput.trim() === correctPin) {
+      setIsUnlocked(true);
+      try {
+        sessionStorage.setItem('gosung_expense_unlocked', 'true');
+      } catch (err) {
+        console.error(err);
+      }
+      setPinInput('');
+      setPinError('');
+    } else {
+      setPinError('비밀번호가 일치하지 않습니다. 다시 입력해 주세요.');
+    }
+  };
+
+  const handleLockMenu = () => {
+    setIsUnlocked(false);
+    try {
+      sessionStorage.removeItem('gosung_expense_unlocked');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // 행사 저장(개설 또는 수정) 핸들러
+  const handleSaveEvent = (savedEvent: EventRecord, isEdit: boolean) => {
+    if (isEdit) {
+      const updated = events.map((ev) => (ev.id === savedEvent.id ? savedEvent : ev));
+      setEvents(updated);
+      saveEvents(updated);
+    } else {
+      const updated = [savedEvent, ...events];
+      setEvents(updated);
+      saveEvents(updated);
+      handleSelectEvent(savedEvent.id);
+    }
+    setIsEventSettingsModalOpen(false);
+  };
+
+  // 미인증 시 관리자 인증 잠금 화면 렌더링
+  if (!isUnlocked) {
+    return (
+      <div className="py-12 px-4 flex items-center justify-center">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 max-w-md w-full p-8 text-center space-y-6 animate-in zoom-in-95">
+          <div className="w-16 h-16 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center mx-auto border border-amber-200">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div>
+            <span className="text-[11px] font-black tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full uppercase">
+              종친회 재정 보안 구역
+            </span>
+            <h2 className="text-xl font-black text-slate-900 mt-2">
+              행사 지출·수지 결산 관리자 인증
+            </h2>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              지출 증빙 영수증, 행사 수지 결산 총괄표, 감사보고서는<br />
+              종친회 재정 보호를 위해 관계자 전용으로 보호되어 있습니다.
+            </p>
+          </div>
+
+          <form onSubmit={handleVerifyPin} className="space-y-4">
+            <div>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={pinInput}
+                  onChange={(e) => {
+                    setPinInput(e.target.value);
+                    if (pinError) setPinError('');
+                  }}
+                  placeholder="관리자 비밀번호 입력"
+                  className="w-full px-4 py-3 text-center text-lg font-black tracking-widest border border-slate-300 rounded-2xl focus:ring-2 focus:ring-amber-500 focus:outline-none bg-slate-50 font-mono"
+                  autoFocus
+                />
+                <KeyRound className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              </div>
+              {pinError && (
+                <p className="text-xs text-red-600 font-bold mt-2 flex items-center justify-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  {pinError}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-black text-sm rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Unlock className="w-4 h-4" />
+              <span>관리자 잠금 해제</span>
+            </button>
+          </form>
+
+          <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400">
+            종친회 임원 및 지정된 관계자만 접근할 수 있습니다.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* 1. 상단 행사 선택 & 메인 액션 바 */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* 행사 선택기 */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex items-center gap-2">
             <span className="p-2 bg-indigo-50 text-indigo-700 rounded-xl">
               <Calendar className="w-5 h-5" />
@@ -187,11 +309,37 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
 
           <button
             type="button"
-            onClick={() => setIsNewEventModalOpen(true)}
-            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 flex items-center gap-1.5 transition-all cursor-pointer"
+            onClick={() => {
+              setEventModalMode('create');
+              setIsEventSettingsModalOpen(true);
+            }}
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-slate-600" />
             <span>새 행사 개설하기</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEventModalMode('edit');
+              setIsEventSettingsModalOpen(true);
+            }}
+            className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 flex items-center gap-1.5 transition-all cursor-pointer"
+            title="현재 행사의 회장, 감사진, 일시 및 장소 변경"
+          >
+            <Settings className="w-3.5 h-3.5 text-indigo-600" />
+            <span>행사 설정·임원 수정</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLockMenu}
+            className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 text-xs font-bold rounded-xl border border-slate-300 flex items-center gap-1 transition-all cursor-pointer"
+            title="자리를 비울 때 재정 화면을 즉시 잠급니다"
+          >
+            <Lock className="w-3.5 h-3.5 text-slate-500" />
+            <span>잠그기</span>
           </button>
         </div>
 
@@ -490,18 +638,14 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
         />
       )}
 
-      {/* 5-2. 신규 행사 개설 모달 */}
-      {isNewEventModalOpen && (
-        <NewEventModal
-          isOpen={isNewEventModalOpen}
-          onClose={() => setIsNewEventModalOpen(false)}
-          onAddEvent={(newEvent) => {
-            const updated = [newEvent, ...events];
-            setEvents(updated);
-            saveEvents(updated);
-            handleSelectEvent(newEvent.id);
-            setIsNewEventModalOpen(false);
-          }}
+      {/* 5-2. 행사 개설 및 설정/임원 수정 모달 */}
+      {isEventSettingsModalOpen && (
+        <EventSettingsModal
+          isOpen={isEventSettingsModalOpen}
+          mode={eventModalMode}
+          currentEvent={currentEvent}
+          onClose={() => setIsEventSettingsModalOpen(false)}
+          onSaveEvent={handleSaveEvent}
         />
       )}
 
@@ -858,25 +1002,74 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 };
 
 // =========================================================================
-// 새 행사 개설 모달 컴포넌트
+// 행사 개설 및 설정/임원 수정 모달 컴포넌트
 // =========================================================================
-interface NewEventModalProps {
+interface EventSettingsModalProps {
   isOpen: boolean;
+  mode: 'create' | 'edit';
+  currentEvent?: EventRecord;
   onClose: () => void;
-  onAddEvent: (event: EventRecord) => void;
+  onSaveEvent: (event: EventRecord, isEdit: boolean) => void;
 }
 
-const NewEventModal: React.FC<NewEventModalProps> = ({
+const EventSettingsModal: React.FC<EventSettingsModalProps> = ({
   isOpen,
+  mode,
+  currentEvent,
   onClose,
-  onAddEvent,
+  onSaveEvent,
 }) => {
   const [name, setName] = useState<string>('');
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [location, setLocation] = useState<string>('서울 종친회관 대강당');
+  const [presidentName, setPresidentName] = useState<string>('이 기 석');
+  const [auditors, setAuditors] = useState<string[]>(['이 종 춘', '이 원 구']);
+
+  // 모달 열릴 때 초기값 동기화
+  React.useEffect(() => {
+    if (mode === 'edit' && currentEvent) {
+      setName(currentEvent.name);
+      setYear(currentEvent.year);
+      setDate(currentEvent.date);
+      setLocation(currentEvent.location || '서울 종친회관 대강당');
+      setPresidentName(currentEvent.presidentName || '이 기 석');
+      setAuditors(
+        currentEvent.auditors && currentEvent.auditors.length > 0
+          ? currentEvent.auditors
+          : ['이 종 춘', '이 원 구']
+      );
+    } else {
+      setName('');
+      setYear(new Date().getFullYear());
+      setDate(new Date().toISOString().split('T')[0]);
+      setLocation('서울 종친회관 대강당');
+      setPresidentName('이 기 석');
+      setAuditors(['이 종 춘', '이 원 구']);
+    }
+  }, [isOpen, mode, currentEvent]);
 
   if (!isOpen) return null;
+
+  const handleAddAuditor = () => {
+    setAuditors((prev) => [...prev, '']);
+  };
+
+  const handleRemoveAuditor = (idx: number) => {
+    if (auditors.length <= 1) {
+      alert('감사는 최소 1명 이상이어야 합니다.');
+      return;
+    }
+    setAuditors((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleAuditorChange = (idx: number, val: string) => {
+    setAuditors((prev) => {
+      const next = [...prev];
+      next[idx] = val;
+      return next;
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -885,26 +1078,41 @@ const NewEventModal: React.FC<NewEventModalProps> = ({
       return;
     }
 
-    const newEvent: EventRecord = {
-      id: `event_${year}_${Date.now().toString(36)}`,
+    const filteredAuditors = auditors.map((a) => a.trim()).filter((a) => a !== '');
+    if (filteredAuditors.length === 0) {
+      alert('최소 1명 이상의 감사 성명을 입력해 주세요.');
+      return;
+    }
+
+    const targetId = mode === 'edit' && currentEvent ? currentEvent.id : `event_${year}_${Date.now().toString(36)}`;
+    const eventData: EventRecord = {
+      id: targetId,
       name: name.trim(),
       year,
       date,
       location: location.trim(),
-      status: 'active',
-      createdAt: new Date().toISOString(),
+      presidentName: presidentName.trim() || '이 기 석',
+      auditors: filteredAuditors,
+      status: mode === 'edit' && currentEvent ? currentEvent.status : 'active',
+      createdAt: mode === 'edit' && currentEvent ? currentEvent.createdAt : new Date().toISOString(),
     };
 
-    onAddEvent(newEvent);
+    onSaveEvent(eventData, mode === 'edit');
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 animate-in zoom-in-95">
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Plus className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-base font-bold">새 종친회 행사 개설</h3>
+            {mode === 'create' ? (
+              <Plus className="w-5 h-5 text-indigo-400" />
+            ) : (
+              <Settings className="w-5 h-5 text-indigo-400" />
+            )}
+            <h3 className="text-base font-bold">
+              {mode === 'create' ? '새 종친회 행사 개설' : '종친회 행사 정보 및 임원 설정 수정'}
+            </h3>
           </div>
           <button
             type="button"
@@ -915,9 +1123,11 @@ const NewEventModal: React.FC<NewEventModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           <p className="text-xs text-slate-500 leading-relaxed">
-            새 행사를 개설하면 기존 행사의 자료는 영구 보관되며, 새 행사의 접수 회비 및 지출 내역이 새롭게 시작됩니다.
+            {mode === 'create'
+              ? '새 행사를 개설하면 기존 행사의 자료는 영구 보관되며, 새 행사의 접수 회비 및 지출 내역이 새롭게 시작됩니다.'
+              : '현재 행사의 행사명, 일자, 장소 및 감사보고서에 날인될 회장·감사진 성명을 수정합니다.'}
           </p>
 
           <div>
@@ -968,7 +1178,72 @@ const NewEventModal: React.FC<NewEventModalProps> = ({
             />
           </div>
 
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+          {/* 회장 성명 (기본: 이기석) */}
+          <div className="pt-2 border-t border-slate-200">
+            <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+              <span>회장 성명</span>
+              <span className="text-[11px] text-slate-400 font-normal">감사보고서 서명란 기본 표기</span>
+            </label>
+            <input
+              type="text"
+              placeholder="회장 성명 (예: 이 기 석)"
+              value={presidentName}
+              onChange={(e) => setPresidentName(e.target.value)}
+              required
+              className="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* 감사진 성명 (동적 추가/삭제) */}
+          <div className="pt-2 border-t border-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-indigo-600" />
+                <span>감사진 성명 ({auditors.length}명)</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAddAuditor}
+                className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <Plus className="w-3 h-3" />
+                <span>감사 추가</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-tight">
+              감사가 1명이면 1명, 2명이면 2명, 필요 시 3인 이상도 추가할 수 있으며 A4 감사보고서에 서명란이 자동 생성됩니다.
+            </p>
+
+            <div className="space-y-2 pt-1">
+              {auditors.map((auditor, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500 w-14 shrink-0">
+                    감사 {idx + 1}
+                  </span>
+                  <input
+                    type="text"
+                    placeholder={`감사 ${idx + 1} 성명`}
+                    value={auditor}
+                    onChange={(e) => handleAuditorChange(idx, e.target.value)}
+                    required
+                    className="flex-1 px-3 py-1.5 text-xs font-bold border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                  {auditors.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAuditor(idx)}
+                      className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                      title="감사 삭제"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
@@ -980,7 +1255,7 @@ const NewEventModal: React.FC<NewEventModalProps> = ({
               type="submit"
               className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer"
             >
-              새 행사 개설하기
+              {mode === 'create' ? '새 행사 개설하기' : '행사 설정 저장하기'}
             </button>
           </div>
         </form>

@@ -10,6 +10,7 @@ import {
   getExpenseMenuPin,
 } from '../utils/storage';
 import { AuditReportModal } from './AuditReportModal';
+import { EventSummaryReportModal } from './EventSummaryReportModal';
 import {
   Calendar,
   Plus,
@@ -39,6 +40,7 @@ import {
   KeyRound,
   Settings,
   Users,
+  FileText,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -73,6 +75,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
   const [isEventSettingsModalOpen, setIsEventSettingsModalOpen] = useState<boolean>(false);
   const [eventModalMode, setEventModalMode] = useState<'create' | 'edit'>('create');
   const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
+  const [isEventSummaryModalOpen, setIsEventSummaryModalOpen] = useState<boolean>(false);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
   // 4. 필터 상태
@@ -358,9 +361,20 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
             type="button"
             onClick={() => setIsAuditModalOpen(true)}
             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer border border-emerald-500"
+            title="회계 적법성 검토 및 감사위원 날인 감사보고서 출력"
           >
             <Printer className="w-4 h-4" />
-            <span>📜 A4 공식 감사보고서 인쇄</span>
+            <span>📜 A4 감사보고서</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsEventSummaryModalOpen(true)}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer border border-indigo-500"
+            title="참석 인원 통계, 문파별 분포, 수지 결산 총괄 및 특별 찬조자 명단 종합보고서 출력"
+          >
+            <FileText className="w-4 h-4" />
+            <span>📋 행사 종합보고서 (결과보고)</span>
           </button>
 
           <button
@@ -369,7 +383,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
               setEditingExpense(null);
               setIsExpenseModalOpen(true);
             }}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer border border-indigo-500"
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer border border-slate-700"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>지출 & 영수증 등록</span>
@@ -687,6 +701,15 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
       <AuditReportModal
         isOpen={isAuditModalOpen}
         onClose={() => setIsAuditModalOpen(false)}
+        event={currentEvent}
+        attendanceRecords={attendanceRecords}
+        expenses={expenses}
+      />
+
+      {/* 5-5. 행사 종합 결과보고서 모달 */}
+      <EventSummaryReportModal
+        isOpen={isEventSummaryModalOpen}
+        onClose={() => setIsEventSummaryModalOpen(false)}
         event={currentEvent}
         attendanceRecords={attendanceRecords}
         expenses={expenses}

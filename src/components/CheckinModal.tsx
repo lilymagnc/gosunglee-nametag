@@ -24,6 +24,7 @@ import {
   Crown,
   Sparkles,
 } from 'lucide-react';
+import { SponsorshipBannerModal } from './SponsorshipBannerModal';
 
 interface CheckinModalProps {
   member: Member;
@@ -70,6 +71,9 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
   const [previewThermal, setPreviewThermal] = useState<'color' | 'outline' | 'inverted' | 'textOnly'>(
     settings.thermalMode || (settings.paperSize === 'formtec_3114' ? 'color' : 'inverted')
   );
+
+  // 80mm 협찬금 리본 모달 제어 상태
+  const [isSponsorshipOpen, setIsSponsorshipOpen] = useState(false);
 
   // 현장 인라인 회원 정보 수정 상태
   const [isEditingInfo, setIsEditingInfo] = useState(false);
@@ -549,9 +553,26 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
                 />
               </div>
               {feeAmount >= 100000 && (
-                <div className="mt-2 p-2 bg-amber-50 border border-amber-300 rounded-lg flex items-center gap-1.5 text-xs text-amber-900 font-bold animate-in fade-in">
-                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>10만원 이상 납부: 접수 완료 후 2번 프린터로 [📜 80mm 협찬금 리본] 출력이 가능합니다.</span>
+                <div className="mt-2.5 p-3 bg-amber-50 border-2 border-amber-400 rounded-xl flex items-center justify-between gap-2.5 shadow-xs animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                    <div>
+                      <div className="text-xs font-black text-amber-950">
+                        10만원 이상 특별 협찬/지원금 ({feeAmount.toLocaleString()}원)
+                      </div>
+                      <div className="text-[11px] text-amber-800">
+                        성함({editName || member.name})·문파·세수·금액이 자동 연계되어 80mm 리본으로 출력됩니다.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSponsorshipOpen(true)}
+                    className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-black rounded-lg shadow-md flex items-center gap-1.5 shrink-0 transition-all cursor-pointer border border-amber-500"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-white" />
+                    <span>📜 협찬 리본 출력 ➔</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -788,61 +809,87 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
         </div>
 
         {/* 모달 푸터 액션 버튼 */}
-        <div className="bg-slate-100 px-6 py-3.5 flex flex-col sm:flex-row gap-2 justify-end border-t border-slate-200 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition-all"
-          >
-            {existingRecord ? '닫기 (변경 취소)' : '취소'}
-          </button>
+        <div className="bg-slate-100 px-6 py-3.5 flex flex-col sm:flex-row gap-2 justify-between items-center border-t border-slate-200 shrink-0">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+            >
+              {existingRecord ? '닫기 (변경 취소)' : '취소'}
+            </button>
 
-          {existingRecord ? (
-            <>
+            {feeAmount >= 100000 && (
               <button
                 type="button"
-                onClick={() => handleSave(false)}
-                className="px-5 py-2.5 text-xs font-extrabold text-slate-800 bg-white border-2 border-emerald-500 hover:bg-emerald-50 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                onClick={() => setIsSponsorshipOpen(true)}
+                className="px-4 py-2.5 text-xs font-black text-amber-950 bg-amber-400 hover:bg-amber-300 active:scale-95 rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer border border-amber-500 animate-in fade-in"
+                title="입력된 성명, 문파, 세수, 금액으로 80mm 협찬금 리본을 출력합니다"
               >
-                <Save className="w-4 h-4 text-emerald-600" />
-                💾 수정 내용만 저장 (인쇄 안 함)
+                <Printer className="w-4 h-4 text-amber-900" />
+                <span>📜 80mm 협찬 리본 출력 ({feeAmount.toLocaleString()}원)</span>
               </button>
+            )}
+          </div>
 
-              <button
-                type="button"
-                onClick={() => handleSave(true)}
-                className="px-5 py-2.5 text-sm font-extrabold text-white bg-emerald-700 hover:bg-emerald-800 active:scale-95 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all"
-              >
-                <Printer className="w-4 h-4" />
-                {paperSize === 'formtec_3114'
-                  ? `수정 저장 & [${selectedSlot}번 칸] 라벨 재인쇄`
-                  : '수정 저장 & 라벨 재인쇄'}
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => handleSave(false)}
-                className="px-4 py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all"
-              >
-                <Clock className="w-4 h-4 text-amber-500" />
-                대기열에 담기 (나중에 모아찍기)
-              </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {existingRecord ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSave(false)}
+                  className="px-5 py-2.5 text-xs font-extrabold text-slate-800 bg-white border-2 border-emerald-500 hover:bg-emerald-50 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Save className="w-4 h-4 text-emerald-600" />
+                  💾 수정 내용만 저장 (인쇄 안 함)
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleSave(true)}
-                className="px-5 py-2.5 text-sm font-extrabold text-white bg-sky-600 hover:bg-sky-700 active:scale-95 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all"
-              >
-                <Printer className="w-4 h-4" />
-                {paperSize === 'formtec_3114'
-                  ? `접수 완료 & [${selectedSlot}번 칸] 즉시 인쇄`
-                  : '접수 완료 & 즉시 라벨 인쇄'}
-              </button>
-            </>
-          )}
+                <button
+                  type="button"
+                  onClick={() => handleSave(true)}
+                  className="px-5 py-2.5 text-sm font-extrabold text-white bg-emerald-700 hover:bg-emerald-800 active:scale-95 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  {paperSize === 'formtec_3114'
+                    ? `수정 저장 & [${selectedSlot}번 칸] 라벨 재인쇄`
+                    : '수정 저장 & 라벨 재인쇄'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSave(false)}
+                  className="px-4 py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Clock className="w-4 h-4 text-amber-500" />
+                  대기열에 담기 (나중에 모아찍기)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSave(true)}
+                  className="px-5 py-2.5 text-sm font-extrabold text-white bg-sky-600 hover:bg-sky-700 active:scale-95 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  {paperSize === 'formtec_3114'
+                    ? `접수 완료 & [${selectedSlot}번 칸] 즉시 인쇄`
+                    : '접수 완료 & 즉시 라벨 인쇄'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* 80mm 협찬금 세로 리본 출력 모달 (이름, 문파, 세수, 금액 100% 자동 연계) */}
+        <SponsorshipBannerModal
+          isOpen={isSponsorshipOpen}
+          onClose={() => setIsSponsorshipOpen(false)}
+          initialName={editName || member.name}
+          initialBranch={editBranch || member.branch}
+          initialGeneration={editGeneration || member.generation}
+          initialAmount={feeAmount}
+        />
       </div>
     </div>
   );

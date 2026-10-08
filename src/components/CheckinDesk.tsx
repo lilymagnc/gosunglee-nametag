@@ -723,17 +723,25 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
                         <button
                           type="button"
                           onClick={() => onOpenCheckin(member)}
-                          className="px-3.5 py-2 text-xs font-bold text-emerald-900 bg-emerald-100 hover:bg-emerald-200 active:scale-95 border-2 border-emerald-400 rounded-xl shadow-sm flex items-center gap-1.5 transition-all group"
+                          className={`px-3.5 py-2 text-xs font-bold active:scale-95 border-2 rounded-xl shadow-sm flex items-center gap-1.5 transition-all group ${
+                            checkedIn.travelFeePaid
+                              ? 'text-amber-950 bg-amber-100/90 hover:bg-amber-200 border-amber-400'
+                              : settings.isTravelFeeEvent
+                              ? 'text-slate-800 bg-slate-100 hover:bg-slate-200 border-slate-400'
+                              : 'text-emerald-900 bg-emerald-100 hover:bg-emerald-200 border-emerald-400'
+                          }`}
                           title="접수 내역 또는 교통비/회비 바로 수정하기"
                         >
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-700 group-hover:hidden" />
-                          <Edit3 className="w-3.5 h-3.5 text-emerald-800 hidden group-hover:inline" />
+                          <CheckCircle className="w-3.5 h-3.5 group-hover:hidden" />
+                          <Edit3 className="w-3.5 h-3.5 hidden group-hover:inline" />
                           {checkedIn.travelFeePaid ? (
-                            <span>접수완료 (🚗 교통비 지급)</span>
+                            <span className="font-extrabold text-amber-950">접수완료 (🚗 5만원 지급)</span>
+                          ) : settings.isTravelFeeEvent ? (
+                            <span className="font-extrabold text-slate-700">접수완료 (⚠️ 봉투 미지급)</span>
                           ) : (
                             <span>접수완료 ({checkedIn.feeAmount.toLocaleString()}원)</span>
                           )}
-                          <span className="text-[11px] bg-emerald-700 text-white px-2 py-0.5 rounded font-black ml-1 shadow-2xs">
+                          <span className="text-[11px] bg-slate-800 text-white px-2 py-0.5 rounded font-black ml-1 shadow-2xs">
                             수정 ✏️
                           </span>
                         </button>

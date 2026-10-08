@@ -48,13 +48,9 @@ export const TravelFeeReportModal: React.FC<TravelFeeReportModalProps> = ({
     setOrgTitle(defaultOrgTitle);
   }, [resolvedPresident, defaultOrgTitle]);
 
-  // 당일 행사 출석 데이터 중 교통비 지급 대상자 추출
+  // 당일 행사 출석 데이터 중 실제로 현금 봉투가 지급(travelFeePaid === true)된 종친만 추출
   const targetRecords = attendanceRecords.filter((r) => {
     const isThisEvent = r.eventName === eventName || r.year === (settings.eventYear || 2026);
-    // 교통비 행사 모드이면 기본적으로 지급 안 함(false)이 아닌 모든 참석자, 혹은 travelFeePaid === true
-    if (settings.isTravelFeeEvent) {
-      return isThisEvent && r.travelFeePaid !== false;
-    }
     return isThisEvent && r.travelFeePaid === true;
   });
 

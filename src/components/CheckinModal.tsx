@@ -67,7 +67,7 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
       : 20000
   );
   const [travelFeePaid, setTravelFeePaid] = useState<boolean>(
-    existingRecord?.travelFeePaid !== undefined ? existingRecord.travelFeePaid : isTravelFeeMode
+    existingRecord?.travelFeePaid !== undefined ? existingRecord.travelFeePaid : false
   );
   const [showSponsorshipInput, setShowSponsorshipInput] = useState<boolean>(
     existingRecord ? existingRecord.feeAmount > 0 : false
@@ -131,9 +131,7 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
       setFeeAmount(isTravelFeeMode ? 0 : 20000);
       const lastPay = (localStorage.getItem('gosung_last_payment_method') as any) || '현금';
       setPaymentMethod(lastPay);
-      setNotes('');
-      setTravelFeePaid(isTravelFeeMode);
-      setShowSponsorshipInput(false);
+      setTravelFeePaid(false); // ⭐ 기본값은 무조건 '지급 안 함(미지급)'! 현금 봉투 전달 시에만 직접 체크
       setSelectedSlot(settings.formtecStartSlot || 1);
     }
     setEditName(member.name);
@@ -565,43 +563,50 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
                 <div
                   className={`p-4 rounded-xl border-2 transition-all ${
                     travelFeePaid
-                      ? 'bg-amber-50/90 border-amber-400 shadow-xs'
-                      : 'bg-slate-50 border-slate-300 opacity-70'
+                      ? 'bg-amber-50/95 border-amber-400 shadow-md ring-2 ring-amber-200'
+                      : 'bg-slate-50/80 border-dashed border-slate-300'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
-                      <span className="text-2xl">🚗</span>
+                      <span className="text-3xl">🚗</span>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-amber-950">참석 여비(교통비) 5만원 지급</span>
-                          <span className="text-[10px] bg-amber-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-xs">
+                          <span className="text-sm font-black text-slate-900">참석 여비(교통비) 지급</span>
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs ${
+                            travelFeePaid
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-slate-200 text-slate-700'
+                          }`}>
                             {configuredTravelFeeAmount.toLocaleString()}원
                           </span>
                         </div>
-                        <p className="text-[11px] text-amber-800 mt-0.5">
-                          ※ 본 행사는 회비가 0원(면제)이며, 오신 종친께 현금 봉투를 지급합니다.
+                        <p className="text-[11px] mt-0.5">
+                          {travelFeePaid ? (
+                            <strong className="text-emerald-700">✔ 5만원 현금 봉투 지급으로 체크됨 (수령대장 등재)</strong>
+                          ) : (
+                            <span className="text-slate-500">
+                              ※ 기본 <strong>[미지급]</strong> 상태입니다. <strong>실제 5만원 봉투를 건네드릴 때 우측 버튼을 누르세요.</strong>
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
 
-                    <label
-                      className={`px-3 py-2 rounded-xl border-2 flex items-center gap-2 cursor-pointer transition-all select-none shrink-0 ${
+                    <button
+                      type="button"
+                      onClick={() => setTravelFeePaid(!travelFeePaid)}
+                      className={`px-4 py-2.5 rounded-xl border-2 flex items-center justify-center gap-2 cursor-pointer transition-all select-none shrink-0 text-xs font-black shadow-sm ${
                         travelFeePaid
-                          ? 'bg-amber-500 border-amber-600 text-white font-black shadow-md'
-                          : 'bg-white border-slate-300 text-slate-600 font-bold'
+                          ? 'bg-amber-500 hover:bg-amber-600 border-amber-600 text-white shadow-md active:scale-95'
+                          : 'bg-white hover:bg-amber-50 border-slate-300 hover:border-amber-400 text-slate-700 active:scale-95'
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={travelFeePaid}
-                        onChange={(e) => setTravelFeePaid(e.target.checked)}
-                        className="w-4 h-4 rounded text-amber-600 cursor-pointer"
-                      />
-                      <span className="text-xs whitespace-nowrap">
-                        {travelFeePaid ? '현금 봉투 지급' : '지급 안 함'}
+                      <span className="text-base">{travelFeePaid ? '✅' : '⬜'}</span>
+                      <span>
+                        {travelFeePaid ? '5만원 봉투 지급 완료' : '봉투 전달 시 클릭 (체크)'}
                       </span>
-                    </label>
+                    </button>
                   </div>
 
                   {existingRecord?.travelFeePaid && (

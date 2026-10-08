@@ -27,8 +27,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   onSave,
 }) => {
-  if (!isOpen) return null;
-
   const currentYear = new Date().getFullYear();
   const [eventYear, setEventYear] = useState<number>(settings.eventYear || currentYear);
   const [eventName, setEventName] = useState(
@@ -163,6 +161,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { label: '에메랄드그린', color: '#059669' },
     { label: '클래식그레이', color: '#e2e8f0' },
   ];
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">

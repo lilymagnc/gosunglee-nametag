@@ -596,14 +596,16 @@ export const App: React.FC = () => {
       )}
 
       {/* 현장 신규 종친 등록 모달 */}
-      <NewMemberModal
-        settings={settings}
-        isOpen={isNewMemberOpen}
-        onClose={() => setIsNewMemberOpen(false)}
-        onRegister={handleRegisterNewMember}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onUpdateSettings={handleUpdateSettings}
-      />
+      {isNewMemberOpen && (
+        <NewMemberModal
+          settings={settings}
+          isOpen={isNewMemberOpen}
+          onClose={() => setIsNewMemberOpen(false)}
+          onRegister={handleRegisterNewMember}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onUpdateSettings={handleUpdateSettings}
+        />
+      )}
 
       {/* 회원 정보 수정 모달 */}
       {editTarget && (
@@ -616,12 +618,14 @@ export const App: React.FC = () => {
       )}
 
       {/* 행사명 및 명찰 종합 환경설정 모달 */}
-      <SettingsModal
-        settings={settings}
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onSave={handleUpdateSettings}
-      />
+      {isSettingsOpen && (
+        <SettingsModal
+          settings={settings}
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onSave={handleUpdateSettings}
+        />
+      )}
 
       {/* 즉시 단일 또는 다중 일괄 인쇄 전용 숨김 컨테이너 */}
       {(singlePrintItem || (batchPrintItems && batchPrintItems.length > 0)) && (

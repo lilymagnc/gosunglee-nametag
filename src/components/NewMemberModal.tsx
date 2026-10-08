@@ -27,8 +27,6 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
   onOpenSettings,
   onUpdateSettings,
 }) => {
-  if (!isOpen) return null;
-
   const [name, setName] = useState('');
   const [branch, setBranch] = useState<string>('사암공파');
   const [customBranch, setCustomBranch] = useState('');
@@ -132,6 +130,8 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
     onRegister(newMember, newRecord, printNow, customSettings);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in duration-150">

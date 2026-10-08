@@ -51,8 +51,6 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
   onOpenSettings,
   onUpdateSettings,
 }) => {
-  if (!isOpen) return null;
-
   const [role, setRole] = useState(existingRecord?.role || member.role || '');
   const [feeAmount, setFeeAmount] = useState<number>(
     existingRecord !== undefined ? existingRecord.feeAmount : 20000
@@ -204,6 +202,8 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
     onComplete(record, printNow, updatedMember, customSettings);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in duration-150">

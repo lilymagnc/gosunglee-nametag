@@ -34,6 +34,7 @@ import { EditMemberModal } from './components/EditMemberModal';
 import { PrintCenter } from './components/PrintCenter';
 import { Dashboard } from './components/Dashboard';
 import { MemberList } from './components/MemberList';
+import { ExpenseManager } from './components/ExpenseManager';
 import { PrintSingleLabel } from './components/PrintSingleLabel';
 import { PrintSheetFormtec } from './components/PrintSheetFormtec';
 import { SettingsModal } from './components/SettingsModal';
@@ -44,10 +45,10 @@ export const App: React.FC = () => {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(loadAttendance);
   const [settings, setSettings] = useState<LabelSettings>(loadSettings);
   const [printQueue, setPrintQueue] = useState<AttendanceRecord[]>(loadPrintQueue);
-  const [activeTab, setActiveTab] = useState<'checkin' | 'print' | 'dashboard' | 'members'>(() => {
+  const [activeTab, setActiveTab] = useState<'checkin' | 'print' | 'dashboard' | 'members' | 'expenses'>(() => {
     const saved = localStorage.getItem('gosung_active_tab');
-    if (saved === 'checkin' || saved === 'print' || saved === 'dashboard' || saved === 'members') {
-      return saved;
+    if (saved === 'checkin' || saved === 'print' || saved === 'dashboard' || saved === 'members' || saved === 'expenses') {
+      return saved as any;
     }
     return 'checkin';
   });
@@ -585,6 +586,10 @@ export const App: React.FC = () => {
             onBatchPrint={handleBatchPrint}
             onAddToQueue={handleAddToQueue}
           />
+        </div>
+
+        <div className={activeTab === 'expenses' ? 'block' : 'hidden'}>
+          <ExpenseManager attendanceRecords={attendance} />
         </div>
       </main>
 

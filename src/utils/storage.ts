@@ -1,4 +1,4 @@
-import { Member, AttendanceRecord, LabelSettings } from '../types';
+import { Member, AttendanceRecord, LabelSettings, EventRecord, ExpenseItem } from '../types';
 import { DEFAULT_MEMBERS } from '../data/defaultMembers';
 
 const STORAGE_KEYS = {
@@ -7,6 +7,9 @@ const STORAGE_KEYS = {
   HISTORY: 'gosung_attendance_history_v1',
   SETTINGS: 'gosung_settings_v1',
   PRINT_QUEUE: 'gosung_print_queue_v1',
+  EVENTS: 'gosung_events_v1',
+  EXPENSES: 'gosung_expenses_v1',
+  ACTIVE_EVENT_ID: 'gosung_active_event_id_v1',
 };
 
 export const CURRENT_EVENT = {
@@ -281,5 +284,160 @@ export function savePrintQueue(queue: AttendanceRecord[]): void {
     localStorage.setItem(STORAGE_KEYS.PRINT_QUEUE, JSON.stringify(queue));
   } catch (e) {
     console.error('Failed to save print queue to localStorage', e);
+  }
+}
+
+// ==========================================
+// 역대 행사(Event) 관리 엔진
+// ==========================================
+export const SEED_EVENTS: EventRecord[] = [
+  {
+    id: 'event_2026_spring',
+    name: '2026년 정기총회 및 시제',
+    year: 2026,
+    date: '2026-10-08',
+    location: '서울 종친회관 대강당',
+    status: 'active',
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'event_2025_autumn',
+    name: '2025년 가을 정기시제',
+    year: 2025,
+    date: '2025-10-19',
+    location: '선영 제실 및 시제터',
+    status: 'archived',
+    createdAt: '2025-10-01',
+  },
+  {
+    id: 'event_2024_spring',
+    name: '2024년 정기총회',
+    year: 2024,
+    date: '2024-03-24',
+    location: '서울 종친회관 대강당',
+    status: 'archived',
+    createdAt: '2024-03-01',
+  },
+];
+
+export function loadEvents(): EventRecord[] {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.EVENTS);
+    if (data) {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load events from localStorage', e);
+  }
+  // 기본 시드 이벤트 저장 후 반환
+  saveEvents(SEED_EVENTS);
+  return SEED_EVENTS;
+}
+
+export function saveEvents(events: EventRecord[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+  } catch (e) {
+    console.error('Failed to save events to localStorage', e);
+  }
+}
+
+export function getActiveEventId(): string {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.ACTIVE_EVENT_ID);
+    if (saved) return saved;
+  } catch (e) {
+    console.error('Failed to get active event id', e);
+  }
+  return 'event_2026_spring';
+}
+
+export function setActiveEventId(id: string): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_EVENT_ID, id);
+  } catch (e) {
+    console.error('Failed to set active event id', e);
+  }
+}
+
+// ==========================================
+// 행사 지출(Expenses) & 영수증 관리 엔진
+// ==========================================
+export const SEED_EXPENSES: ExpenseItem[] = [
+  {
+    id: 'exp_2026_1',
+    eventId: 'event_2026_spring',
+    eventName: '2026년 정기총회 및 시제',
+    date: '2026-10-08',
+    category: '식대·다과',
+    title: '만수정 연회 뷔페 중식대 (85명)',
+    amount: 3400000,
+    paymentMethod: '종친회카드',
+    payer: '총무이사 이진우',
+    notes: '1인 40,000원 x 85명',
+    createdAt: '2026-10-08 13:30',
+  },
+  {
+    id: 'exp_2026_2',
+    eventId: 'event_2026_spring',
+    eventName: '2026년 정기총회 및 시제',
+    date: '2026-10-08',
+    category: '제물·시제',
+    title: '시제 제례용 과일·떡·어물 및 제수용품 일체',
+    amount: 1250000,
+    paymentMethod: '개인선결제(영수)',
+    payer: '제례이사 이성원',
+    notes: '가락시장 청과 및 맞춤 떡 영수',
+    createdAt: '2026-10-08 09:15',
+  },
+  {
+    id: 'exp_2026_3',
+    eventId: 'event_2026_spring',
+    eventName: '2026년 정기총회 및 시제',
+    date: '2026-10-07',
+    category: '인쇄·홍보',
+    title: '정기총회 회보 책자(150부) 및 대형 현수막(2점)',
+    amount: 880000,
+    paymentMethod: '계좌이체',
+    payer: '사무총장 이용식',
+    notes: '충무로 기획인쇄소',
+    createdAt: '2026-10-07 16:00',
+  },
+  {
+    id: 'exp_2026_4',
+    eventId: 'event_2026_spring',
+    eventName: '2026년 정기총회 및 시제',
+    date: '2026-10-08',
+    category: '기념품·답례',
+    title: '참석 종친 답례용 고급 송월타올 세트 (120개)',
+    amount: 720000,
+    paymentMethod: '종친회카드',
+    payer: '재무이사 이강술',
+    notes: '기념 자수 인쇄 포함',
+    createdAt: '2026-10-08 08:40',
+  },
+];
+
+export function loadExpenses(): ExpenseItem[] {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.EXPENSES);
+    if (data) {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load expenses from localStorage', e);
+  }
+  // 기본 샘플 지출 저장 후 반환
+  saveExpenses(SEED_EXPENSES);
+  return SEED_EXPENSES;
+}
+
+export function saveExpenses(expenses: ExpenseItem[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+  } catch (e) {
+    console.error('Failed to save expenses to localStorage', e);
   }
 }

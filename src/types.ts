@@ -60,3 +60,40 @@ export interface LabelSettings {
   showWatermark?: boolean;
 }
 
+// ==========================================
+// 행사 단위 재정 & 지출 관리 모델
+// ==========================================
+export interface EventRecord {
+  id: string;              // 고유 식별자 (e.g. "event_2026_spring")
+  name: string;            // 행사명 (e.g. "2026년 정기총회 및 시제")
+  year: number;            // 연도 (e.g. 2026)
+  date: string;            // 행사 일자 (e.g. "2026-10-08")
+  location?: string;        // 장소 (e.g. "서울 종친회관 대강당")
+  status: 'active' | 'archived'; // 진행 중 vs 보관됨
+  createdAt: string;
+}
+
+export type ExpenseCategory =
+  | '식대·다과'
+  | '제물·시제'
+  | '인쇄·홍보'
+  | '기념품·답례'
+  | '대관·장소'
+  | '교통·운임'
+  | '진행·잡비';
+
+export interface ExpenseItem {
+  id: string;              // 고유 ID
+  eventId: string;         // 연결된 행사 ID
+  eventName: string;       // 행사명 (스냅샷)
+  date: string;            // 지출 일자 (e.g. "2026-10-08")
+  category: ExpenseCategory; // 비목 분류
+  title: string;           // 지출 항목명 (e.g. "만수정 뷔페 중식대 75명")
+  amount: number;          // 지출 금액 (원)
+  paymentMethod: '종친회카드' | '개인선결제(영수)' | '계좌이체' | '현금';
+  payer: string;           // 집행자 / 영수인 (e.g. "총무이사 이진우")
+  receiptImage?: string;   // 영수증 사진 (Base64 or URL)
+  notes?: string;          // 비고
+  createdAt: string;
+}
+

@@ -1,10 +1,10 @@
 import React from 'react';
-import { UserCheck, Printer, FileSpreadsheet, Users, Download, Sparkles, Settings } from 'lucide-react';
+import { UserCheck, Printer, FileSpreadsheet, Users, Download, Sparkles, Settings, Receipt } from 'lucide-react';
 import { LabelSettings } from '../types';
 
 interface HeaderProps {
-  activeTab: 'checkin' | 'print' | 'dashboard' | 'members';
-  setActiveTab: (tab: 'checkin' | 'print' | 'dashboard' | 'members') => void;
+  activeTab: 'checkin' | 'print' | 'dashboard' | 'members' | 'expenses';
+  setActiveTab: (tab: 'checkin' | 'print' | 'dashboard' | 'members' | 'expenses') => void;
   queueCount: number;
   totalAttendance: number;
   totalFee: number;
@@ -146,6 +146,21 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Users className="w-4 h-4 text-amber-500" />
             주소록 원부 관리
+          </button>
+
+          <button
+            onClick={() => setActiveTab('expenses')}
+            className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 shrink-0 ${
+              activeTab === 'expenses'
+                ? 'bg-slate-50 text-slate-900 shadow-sm'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Receipt className="w-4 h-4 text-indigo-400" />
+            <span>행사 지출·결산 (감사보고)</span>
+            <span className="bg-amber-400 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded-full shadow-2xs">
+              NEW
+            </span>
           </button>
         </nav>
       </div>

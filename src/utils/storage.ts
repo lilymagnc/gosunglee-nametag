@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS: LabelSettings = {
   formtecStartSlot: 1, // 1~8번 슬롯 중 1번부터 시작
   eventName: '2026년 정기총회 및 시제',
   eventYear: 2026,
+  showWatermark: true,
 };
 
 // 역대 시제/총회 샘플 출석 이력 시드 데이터 (과거 2024년, 2025년 기록)

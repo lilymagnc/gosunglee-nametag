@@ -55,5 +55,7 @@ export interface LabelSettings {
   // 행사 기본 정보 (사용자 화면에서 언제든 수정 가능)
   eventName: string;      // 행사명 (기본값: "2026년 정기총회 및 시제")
   eventYear: number;      // 행사 연도 (기본값: 2026)
+  // 고성이씨 문양 워터마크 배경 표시 여부
+  showWatermark?: boolean;
 }
 

@@ -116,6 +116,11 @@ export const LabelCard: React.FC<LabelCardProps> = ({
 
   const showFooter = mode !== 'textOnly' && settings.showFooter;
 
+  // 고성이씨 공식 문양 워터마크 (폼텍 컬러는 기본 켜짐, 감열 모드는 지저분한 점묘 방지를 위해 자동 꺼짐)
+  const showWatermark =
+    settings.showWatermark !== false &&
+    (!isThermal || settings.showWatermark === true);
+
   // ---------------------------------------------------------------------------
   // [황금 비율 & 타이포그래피 통일 규칙]:
   // 1. 직책: 16.5px (인쇄 15.5pt) 볼드 폰트로 당당하고 굵직하게 표기
@@ -252,12 +257,33 @@ export const LabelCard: React.FC<LabelCardProps> = ({
 
         {/* 중앙 본문 영역 (직책 18~20% + 이름 80~82% 꽉 채움) */}
         <div
-          className="w-full flex-1 flex items-center justify-between px-1 box-border bg-white"
+          className="w-full flex-1 flex items-center justify-between px-1 box-border bg-white relative overflow-hidden"
           style={{ minHeight: is80x60 ? '30mm' : '34mm' }}
         >
+          {/* ⭐ 고성이씨 공식 문양 연한 워터마크 배경 */}
+          {showWatermark && (
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0"
+              style={{
+                opacity: 0.10,
+              }}
+            >
+              <img
+                src="/logo.png"
+                alt="고성이씨 문양"
+                className="object-contain"
+                style={{
+                  width: is80x60 ? '30mm' : '36mm',
+                  height: is80x60 ? '30mm' : '36mm',
+                  filter: isThermal ? 'grayscale(100%)' : 'none',
+                }}
+              />
+            </div>
+          )}
+
           {/* 좌측 직책 영역 (18~20% 고정 확보하여 직책 유무 상관없이 모든 명찰의 이름 위치가 100% 일치 통일!) */}
           <div
-            className="flex flex-col justify-center items-start text-left shrink-0"
+            className="flex flex-col justify-center items-start text-left shrink-0 relative z-10"
             style={{ width: printRoleWidth, minWidth: printRoleWidth }}
           >
             {formattedRole ? (
@@ -275,7 +301,7 @@ export const LabelCard: React.FC<LabelCardProps> = ({
           </div>
 
           {/* 중앙 성명 영역 (80% 이상 공간을 온전히 활용하여 큼직하고 웅장하게 출력!) */}
-          <div className="flex-1 flex items-center justify-center text-center overflow-hidden">
+          <div className="flex-1 flex items-center justify-center text-center overflow-hidden relative z-10">
             <span
               className="font-black text-black whitespace-nowrap inline-block"
               style={{
@@ -383,7 +409,28 @@ export const LabelCard: React.FC<LabelCardProps> = ({
       </div>
 
       {/* 2. 중앙 본문 영역 (직책 18~20% + 이름 80~82% 꽉 채움) */}
-      <div className="w-full flex-1 flex items-center justify-between px-1 box-border bg-white relative my-1">
+      <div className="w-full flex-1 flex items-center justify-between px-1 box-border bg-white relative my-1 overflow-hidden">
+        {/* ⭐ 고성이씨 공식 문양 연한 워터마크 배경 */}
+        {showWatermark && (
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0"
+            style={{
+              opacity: 0.10,
+            }}
+          >
+            <img
+              src="/logo.png"
+              alt="고성이씨 문양"
+              className="object-contain"
+              style={{
+                width: is80x60 ? '100px' : '125px',
+                height: is80x60 ? '100px' : '125px',
+                filter: isThermal ? 'grayscale(100%)' : 'none',
+              }}
+            />
+          </div>
+        )}
+
         {/* 좌측 직책 영역 (18~20% 고정 확보하여 직책 유무 상관없이 통일감 유지) */}
         <div
           className="flex flex-col justify-center items-start text-left shrink-0 z-10"
@@ -404,7 +451,7 @@ export const LabelCard: React.FC<LabelCardProps> = ({
         </div>
 
         {/* 중앙 성명 영역 (80% 이상의 넓은 공간을 온전히 활용하여 큼직하고 웅장하게 배치!) */}
-        <div className="flex-1 flex items-center justify-center text-center overflow-hidden">
+        <div className="flex-1 flex items-center justify-center text-center overflow-hidden relative z-10">
           <span
             className="font-black text-black whitespace-nowrap inline-block"
             style={{

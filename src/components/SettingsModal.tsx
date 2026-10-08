@@ -10,6 +10,7 @@ import {
   Palette,
   Check,
   RotateCcw,
+  Sparkles,
 } from 'lucide-react';
 import { DEFAULT_SETTINGS } from '../utils/storage';
 
@@ -39,6 +40,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [thermalMode, setThermalMode] = useState(settings.thermalMode || 'color');
   const [fontFamily, setFontFamily] = useState(settings.fontFamily || 'gungsuh');
   const [headerBgColor, setHeaderBgColor] = useState(settings.headerBgColor || '#8cc0ec');
+  const [showWatermark, setShowWatermark] = useState(settings.showWatermark !== false);
 
   useEffect(() => {
     const yr = settings.eventYear || currentYear;
@@ -50,6 +52,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setThermalMode(settings.thermalMode || 'color');
     setFontFamily(settings.fontFamily || 'gungsuh');
     setHeaderBgColor(settings.headerBgColor || '#8cc0ec');
+    setShowWatermark(settings.showWatermark !== false);
   }, [settings, isOpen]);
 
   const handleSave = () => {
@@ -64,6 +67,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       thermalMode,
       fontFamily,
       headerBgColor,
+      showWatermark,
     };
     onSave(updated);
     onClose();
@@ -371,6 +375,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className="w-8 h-8 rounded border border-slate-300 cursor-pointer"
                   title="직접 색상 선택"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* 5. 고성이씨 공식 문양 워터마크 배경 */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>5. 고성이씨 공식 문양 워터마크 (성명 뒷배경)</span>
+              </div>
+              <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 font-bold">
+                <input
+                  type="checkbox"
+                  checked={showWatermark}
+                  onChange={(e) => setShowWatermark(e.target.checked)}
+                  className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"
+                />
+                문양 워터마크 인쇄 켜기
+              </label>
+            </div>
+            <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200">
+              <div className="w-12 h-12 rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center shrink-0 overflow-hidden p-1">
+                <img
+                  src="/logo.png"
+                  alt="고성이씨 문양 미리보기"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="text-slate-600 space-y-0.5">
+                <p className="font-semibold text-slate-800">
+                  고성이씨 공식 문양(오얏꽃/태극)을 명찰 성명 뒷배경에 은은하게(투명도 10%) 인쇄합니다.
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  💡 <strong>컬러 폼텍 용지</strong> 출력 시 고급스럽고 품격 있게 표현되며, <strong>감열 모드</strong>에서는 지저분한 점묘(디더링) 노이즈를 방지하기 위해 자동으로 숨김 처리됩니다.
+                </p>
               </div>
             </div>
           </div>

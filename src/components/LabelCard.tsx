@@ -67,11 +67,14 @@ export const LabelCard: React.FC<LabelCardProps> = ({
 
     // 7자 이상:
     if (trimmed.length > 6) {
-      if (trimmed === '전자족보운영위원') return '전자족\n보운영\n위원';
-      if (trimmed.length === 8) {
-        return `${trimmed.slice(0, 3)}\n${trimmed.slice(3, 6)}\n${trimmed.slice(6)}`;
+      if (trimmed === '전자족보운영위원') return '전자족보\n운영위원';
+      if (trimmed.endsWith('운영위원') && trimmed.length === 8) {
+        return `${trimmed.slice(0, 4)}\n운영위원`;
       }
-      return `${trimmed.slice(0, 3)}\n${trimmed.slice(3)}`;
+      if (trimmed.length === 8) {
+        return `${trimmed.slice(0, 4)}\n${trimmed.slice(4)}`;
+      }
+      return `${trimmed.slice(0, Math.ceil(trimmed.length / 2))}\n${trimmed.slice(Math.ceil(trimmed.length / 2))}`;
     }
 
     return trimmed;
@@ -154,27 +157,45 @@ export const LabelCard: React.FC<LabelCardProps> = ({
   const roleLineCount = roleLines.length;
   const roleMaxLineLen = roleLines.length > 0 ? Math.max(...roleLines.map((l) => l.length)) : 0;
 
-  // 직책 영역 너비 (2글자 폭일 때는 폭을 슬림하게 줄여 이름 중앙 정렬 공간 극대화!)
+  // 직책 영역 너비 (가로 글자수에 따른 최적 폭 계산)
   const printRoleWidth =
-    roleMaxLineLen > 2
+    roleMaxLineLen >= 4
+      ? is80x60 ? '22mm' : '24.5mm'
+      : roleMaxLineLen === 3
       ? is80x60 ? '18.5mm' : '20.5mm'
       : is80x60 ? '15.5mm' : '17mm';
 
   const previewRoleWidth =
-    roleMaxLineLen > 2
+    roleMaxLineLen >= 4
+      ? is80x60 ? '66px' : '76px'
+      : roleMaxLineLen === 3
       ? is80x60 ? '56px' : '64px'
       : is80x60 ? '46px' : '52px';
 
-  // 직책 폰트 크기 및 행간
+  // 직책 폰트 크기 및 행간 (글자수와 줄수에 따른 정밀 조절)
   const printRoleFontSize =
-    roleLineCount >= 3 ? '11.5pt' : roleLineCount === 2 ? '15pt' : '16pt';
+    roleMaxLineLen >= 4
+      ? roleLineCount >= 3 ? '10.5pt' : '12.5pt'
+      : roleLineCount >= 3
+      ? '11.5pt'
+      : roleLineCount === 2
+      ? '15pt'
+      : '16pt';
+
   const printRoleLineHeight =
-    roleLineCount >= 3 ? '1.08' : '1.15';
+    roleLineCount >= 3 ? '1.08' : '1.14';
 
   const previewRoleFontSize =
-    roleLineCount >= 3 ? '12.5px' : roleLineCount === 2 ? '16px' : '17.5px';
+    roleMaxLineLen >= 4
+      ? roleLineCount >= 3 ? '11.5px' : '13.5px'
+      : roleLineCount >= 3
+      ? '12.5px'
+      : roleLineCount === 2
+      ? '16px'
+      : '17.5px';
+
   const previewRoleLineHeight =
-    roleLineCount >= 3 ? '1.10' : '1.18';
+    roleLineCount >= 3 ? '1.10' : '1.16';
 
   // =========================================================================
   // 1. 인쇄 모드 (isPrint === true) - 정확한 mm 단위 레이아웃

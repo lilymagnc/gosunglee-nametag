@@ -95,7 +95,14 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
 
   // 2. 지출 계산 (비목별 집계)
   const eventExpenses = expenses.filter((e) => e.eventId === event.id);
-  const totalExpense = eventExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  // 교통비 지급 행사일 때 자동 연동되는 교통비 합계
+  const autoTravelFeeCount = event.isTravelFeeEvent
+    ? currentEventAttendance.filter((r) => r.travelFeePaid !== false).length
+    : 0;
+  const autoTravelFeeAmount = autoTravelFeeCount * (event.travelFeeAmount || 50000);
+
+  const totalExpense = eventExpenses.reduce((sum, e) => sum + (e.amount || 0), 0) + autoTravelFeeAmount;
 
   // 비목별 소계
   const categories: ExpenseCategory[] = [
@@ -110,12 +117,17 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
 
   const categoryTotals = categories.map((cat) => {
     const items = eventExpenses.filter((e) => e.category === cat);
-    const amount = items.reduce((sum, e) => sum + (e.amount || 0), 0);
+    let amount = items.reduce((sum, e) => sum + (e.amount || 0), 0);
+    let count = items.length;
+    if (cat === '교통·운임' && autoTravelFeeAmount > 0) {
+      amount += autoTravelFeeAmount;
+      count += 1;
+    }
     return {
       category: cat,
       items,
       amount,
-      count: items.length,
+      count,
       ratio: totalExpense > 0 ? ((amount / totalExpense) * 100).toFixed(1) : '0',
     };
   }).filter((c) => c.count > 0 || c.amount > 0);

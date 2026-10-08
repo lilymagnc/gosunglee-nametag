@@ -21,8 +21,10 @@ import {
   X,
   Crown,
   Sparkles,
+  Car,
 } from 'lucide-react';
 import { SponsorshipBannerModal } from './SponsorshipBannerModal';
+import { TravelFeeReportModal } from './TravelFeeReportModal';
 
 interface CheckinDeskProps {
   members: Member[];
@@ -85,6 +87,7 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
   }, [generationFilter]);
 
   const [sponsorshipModalOpen, setSponsorshipModalOpen] = useState<boolean>(false);
+  const [isTravelFeeModalOpen, setIsTravelFeeModalOpen] = useState<boolean>(false);
   const [selectedSponsor, setSelectedSponsor] = useState<{
     name: string;
     branch: string;
@@ -296,7 +299,22 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
             title="80mm 영수증 감열지 연속 롤 전용 세로쓰기 협찬금 리본 출력 (2번 프린터)"
           >
             <Sparkles className="w-4 h-4 text-amber-900" />
-            📜 80mm 협찬금 리본 출력
+            <span>📜 80mm 협찬금 리본</span>
+          </button>
+
+          {/* 🚗 A4 교통비 수령대장 출력 버튼 */}
+          <button
+            type="button"
+            onClick={() => setIsTravelFeeModalOpen(true)}
+            className={`px-4 py-2.5 text-sm font-extrabold rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer border ${
+              settings.isTravelFeeEvent
+                ? 'bg-amber-600 hover:bg-amber-700 text-white border-amber-500 ring-2 ring-amber-300'
+                : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-slate-700'
+            }`}
+            title="A4 공식 참석 종친 여비(교통비) 지급대장 서명부 인쇄 및 엑셀 저장"
+          >
+            <Car className="w-4 h-4 text-amber-300 stroke-[2.5]" />
+            <span>🚗 A4 교통비 수령대장</span>
           </button>
 
           {/* 신규 종친 등록 버튼 */}
@@ -308,6 +326,31 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
             + 신규 종친 현장 등록
           </button>
         </div>
+
+        {/* 🚗 교통비 지급 행사 모드 활성화 알림 배너 */}
+        {settings.isTravelFeeEvent && (
+          <div className="mb-3.5 p-3 bg-amber-50 border-2 border-amber-300 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs text-amber-950 font-bold shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">🚗</span>
+              <div>
+                <span className="font-black text-amber-900">
+                  현재 [교통비 지급 행사 모드]로 운영 중입니다.
+                </span>
+                <span className="text-amber-800 ml-2 font-medium">
+                  (참석 1인당 <strong>{(settings.travelFeeAmount || 50000).toLocaleString()}원</strong> 지급 / 회비 0원 자동 면제)
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsTravelFeeModalOpen(true)}
+              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer font-black text-xs transition-all"
+            >
+              <Car className="w-3.5 h-3.5" />
+              <span>A4 수령대장 서명부 열기</span>
+            </button>
+          </div>
+        )}
 
         {/* 검색 입력 필드 */}
         <div className="relative mb-4">
@@ -676,18 +719,22 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
                           </button>
                         )}
 
-                        {/* 클릭 가능한 접수완료 & 회비 수정 버튼 */}
+                        {/* 클릭 가능한 접수완료 & 회비/교통비 수정 버튼 */}
                         <button
                           type="button"
                           onClick={() => onOpenCheckin(member)}
                           className="px-3.5 py-2 text-xs font-bold text-emerald-900 bg-emerald-100 hover:bg-emerald-200 active:scale-95 border-2 border-emerald-400 rounded-xl shadow-sm flex items-center gap-1.5 transition-all group"
-                          title="회비 금액 또는 결제 방식 바로 수정하기"
+                          title="접수 내역 또는 교통비/회비 바로 수정하기"
                         >
                           <CheckCircle className="w-3.5 h-3.5 text-emerald-700 group-hover:hidden" />
                           <Edit3 className="w-3.5 h-3.5 text-emerald-800 hidden group-hover:inline" />
-                          <span>접수완료 ({checkedIn.feeAmount.toLocaleString()}원)</span>
+                          {checkedIn.travelFeePaid ? (
+                            <span>접수완료 (🚗 교통비 지급)</span>
+                          ) : (
+                            <span>접수완료 ({checkedIn.feeAmount.toLocaleString()}원)</span>
+                          )}
                           <span className="text-[11px] bg-emerald-700 text-white px-2 py-0.5 rounded font-black ml-1 shadow-2xs">
-                            회비수정 ✏️
+                            수정 ✏️
                           </span>
                         </button>
 
@@ -769,6 +816,15 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
         initialBranch={selectedSponsor?.branch || ''}
         initialGeneration={selectedSponsor?.generation || ''}
         initialAmount={selectedSponsor?.amount || 100000}
+      />
+
+      {/* 🚗 A4 참석 종친 여비(교통비) 지급대장 서명부 모달 */}
+      <TravelFeeReportModal
+        isOpen={isTravelFeeModalOpen}
+        onClose={() => setIsTravelFeeModalOpen(false)}
+        settings={settings}
+        attendanceRecords={attendanceRecords}
+        presidentName="이 기 석"
       />
     </div>
   );

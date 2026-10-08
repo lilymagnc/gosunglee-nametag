@@ -41,8 +41,10 @@ import {
   Settings,
   Users,
   FileText,
+  Car,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { TravelFeeReportModal } from './TravelFeeReportModal';
 
 interface ExpenseManagerProps {
   attendanceRecords: AttendanceRecord[];
@@ -76,6 +78,7 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
   const [eventModalMode, setEventModalMode] = useState<'create' | 'edit'>('create');
   const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
   const [isEventSummaryModalOpen, setIsEventSummaryModalOpen] = useState<boolean>(false);
+  const [isTravelFeeModalOpen, setIsTravelFeeModalOpen] = useState<boolean>(false);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
   // 4. 필터 상태
@@ -119,8 +122,16 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
     return expenses.filter((e) => e.eventId === currentEvent.id);
   }, [expenses, currentEvent]);
 
-  // 총 지출액
-  const totalExpense = currentEventExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  // 교통비 지급 행사일 때 자동 연동되는 교통비 합계
+  const autoTravelFeeCount = useMemo(() => {
+    if (!currentEvent || !currentEvent.isTravelFeeEvent) return 0;
+    return currentEventAttendance.filter((r) => r.travelFeePaid !== false).length;
+  }, [currentEvent, currentEventAttendance]);
+
+  const autoTravelFeeAmount = autoTravelFeeCount * (currentEvent?.travelFeeAmount || 50000);
+
+  // 총 지출액 (일반 등록 지출 + 자동 교통비 집행액)
+  const totalExpense = currentEventExpenses.reduce((sum, e) => sum + (e.amount || 0), 0) + autoTravelFeeAmount;
 
   // 수지 차인 잔액
   const balance = totalIncome - totalExpense;
@@ -379,6 +390,20 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
 
           <button
             type="button"
+            onClick={() => setIsTravelFeeModalOpen(true)}
+            className={`px-4 py-2.5 text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer border ${
+              currentEvent.isTravelFeeEvent
+                ? 'bg-amber-600 hover:bg-amber-700 text-white border-amber-500 ring-2 ring-amber-300'
+                : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+            }`}
+            title="A4 공식 참석 종친 여비(교통비) 지급대장 서명부 및 엑셀 저장"
+          >
+            <Car className={`w-4 h-4 ${currentEvent.isTravelFeeEvent ? 'text-amber-200' : 'text-amber-600'}`} />
+            <span>🚗 A4 교통비 수령대장</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => {
               setEditingExpense(null);
               setIsExpenseModalOpen(true);
@@ -491,6 +516,37 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
           </div>
         </div>
       </div>
+
+      {/* 🚗 교통비 지급 행사 모드 지출 자동 연동 배너 */}
+      {currentEvent.isTravelFeeEvent && (
+        <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 bg-amber-500 text-white rounded-xl shadow-xs">
+              <Car className="w-5 h-5" />
+            </span>
+            <div>
+              <div className="text-xs font-black text-amber-950 flex items-center gap-2">
+                <span>[교통비 지급 행사 모드] 자동 지출 연동 중</span>
+                <span className="text-[10px] bg-amber-600 text-white px-2 py-0.5 rounded-full font-extrabold shadow-2xs">
+                  1인당 {(currentEvent.travelFeeAmount || 50000).toLocaleString()}원
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-0.5">
+                현장 접수된 <strong>{autoTravelFeeCount}명</strong> 종친께 총{' '}
+                <strong>{autoTravelFeeAmount.toLocaleString()}원</strong>의 교통비가 지급 집행되어 지출 총액에 자동 합산되었습니다.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsTravelFeeModalOpen(true)}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>A4 교통비 수령대장 인쇄</span>
+          </button>
+        </div>
+      )}
 
       {/* 3. 비목 필터 & 검색 바 */}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -713,6 +769,20 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
         event={currentEvent}
         attendanceRecords={attendanceRecords}
         expenses={expenses}
+      />
+
+      {/* 5-6. 🚗 A4 참석 종친 여비(교통비) 지급대장 서명부 모달 */}
+      <TravelFeeReportModal
+        isOpen={isTravelFeeModalOpen}
+        onClose={() => setIsTravelFeeModalOpen(false)}
+        settings={{
+          eventName: currentEvent.name,
+          eventYear: currentEvent.year,
+          isTravelFeeEvent: currentEvent.isTravelFeeEvent,
+          travelFeeAmount: currentEvent.travelFeeAmount || 50000,
+        } as any}
+        attendanceRecords={attendanceRecords}
+        presidentName={currentEvent.presidentName || '이 기 석'}
       />
     </div>
   );
@@ -1048,6 +1118,8 @@ const EventSettingsModal: React.FC<EventSettingsModalProps> = ({
   const [location, setLocation] = useState<string>('서울 종친회관 대강당');
   const [presidentName, setPresidentName] = useState<string>('이 기 석');
   const [auditors, setAuditors] = useState<string[]>(['이 종 춘', '이 원 구']);
+  const [isTravelFeeEvent, setIsTravelFeeEvent] = useState<boolean>(false);
+  const [travelFeeAmount, setTravelFeeAmount] = useState<number>(50000);
 
   // 모달 열릴 때 초기값 동기화
   React.useEffect(() => {
@@ -1062,6 +1134,8 @@ const EventSettingsModal: React.FC<EventSettingsModalProps> = ({
           ? currentEvent.auditors
           : ['이 종 춘', '이 원 구']
       );
+      setIsTravelFeeEvent(currentEvent.isTravelFeeEvent || false);
+      setTravelFeeAmount(currentEvent.travelFeeAmount || 50000);
     } else {
       setName('');
       setYear(new Date().getFullYear());
@@ -1069,6 +1143,8 @@ const EventSettingsModal: React.FC<EventSettingsModalProps> = ({
       setLocation('서울 종친회관 대강당');
       setPresidentName('이 기 석');
       setAuditors(['이 종 춘', '이 원 구']);
+      setIsTravelFeeEvent(false);
+      setTravelFeeAmount(50000);
     }
   }, [isOpen, mode, currentEvent]);
 
@@ -1116,6 +1192,8 @@ const EventSettingsModal: React.FC<EventSettingsModalProps> = ({
       location: location.trim(),
       presidentName: presidentName.trim() || '이 기 석',
       auditors: filteredAuditors,
+      isTravelFeeEvent,
+      travelFeeAmount: Number(travelFeeAmount) || 50000,
       status: mode === 'edit' && currentEvent ? currentEvent.status : 'active',
       createdAt: mode === 'edit' && currentEvent ? currentEvent.createdAt : new Date().toISOString(),
     };
@@ -1199,6 +1277,45 @@ const EventSettingsModal: React.FC<EventSettingsModalProps> = ({
               onChange={(e) => setLocation(e.target.value)}
               className="w-full px-3 py-2 text-xs font-bold border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
             />
+          </div>
+
+          {/* 🚗 참석 종친 교통비 지급 행사 모드 */}
+          <div
+            className={`p-3.5 rounded-xl border transition-all ${
+              isTravelFeeEvent
+                ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-200'
+                : 'bg-slate-50 border-slate-200'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-2 cursor-pointer">
+                <span>🚗 참석 종친 교통비(거마비) 지급 행사</span>
+              </label>
+              <input
+                type="checkbox"
+                checked={isTravelFeeEvent}
+                onChange={(e) => setIsTravelFeeEvent(e.target.checked)}
+                className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 cursor-pointer"
+              />
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">
+              체크 시 접수대에서 <strong>회비가 0원으로 자동 설정</strong>되고 1인당 교통비 지급 및 A4 수령대장이 연동됩니다.
+            </p>
+            {isTravelFeeEvent && (
+              <div className="mt-2.5 pt-2.5 border-t border-amber-200 flex items-center justify-between gap-2 animate-in fade-in">
+                <span className="text-xs text-amber-950 font-bold">1인당 지급 기준액:</span>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    step="10000"
+                    value={travelFeeAmount}
+                    onChange={(e) => setTravelFeeAmount(Number(e.target.value) || 0)}
+                    className="w-28 px-2 py-1 text-xs font-bold text-right border border-amber-400 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white"
+                  />
+                  <span className="text-xs text-amber-900 font-bold">원</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 회장 성명 (기본: 이기석) */}

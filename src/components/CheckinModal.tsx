@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Crown,
   Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 import { SponsorshipBannerModal } from './SponsorshipBannerModal';
 
@@ -54,9 +55,22 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
   onOpenSettings,
   onUpdateSettings,
 }) => {
+  const isTravelFeeMode = settings.isTravelFeeEvent === true;
+  const configuredTravelFeeAmount = settings.travelFeeAmount || 50000;
+
   const [role, setRole] = useState(existingRecord?.role || member.role || '');
   const [feeAmount, setFeeAmount] = useState<number>(
-    existingRecord !== undefined ? existingRecord.feeAmount : 20000
+    existingRecord !== undefined
+      ? existingRecord.feeAmount
+      : isTravelFeeMode
+      ? 0
+      : 20000
+  );
+  const [travelFeePaid, setTravelFeePaid] = useState<boolean>(
+    existingRecord?.travelFeePaid !== undefined ? existingRecord.travelFeePaid : isTravelFeeMode
+  );
+  const [showSponsorshipInput, setShowSponsorshipInput] = useState<boolean>(
+    existingRecord ? existingRecord.feeAmount > 0 : false
   );
   const [paymentMethod, setPaymentMethod] = useState<'현금' | '계좌이체' | '카드' | '기타' | '미납'>(
     existingRecord?.paymentMethod || (localStorage.getItem('gosung_last_payment_method') as any) || '현금'
@@ -107,15 +121,19 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
       setFeeAmount(existingRecord.feeAmount);
       setPaymentMethod(existingRecord.paymentMethod);
       setNotes(existingRecord.notes || '');
+      setTravelFeePaid(existingRecord.travelFeePaid !== undefined ? existingRecord.travelFeePaid : isTravelFeeMode);
+      setShowSponsorshipInput(existingRecord.feeAmount > 0);
       if (existingRecord.printSlot) {
         setSelectedSlot(existingRecord.printSlot);
       }
     } else {
       setRole(member.role || '');
-      setFeeAmount(20000);
+      setFeeAmount(isTravelFeeMode ? 0 : 20000);
       const lastPay = (localStorage.getItem('gosung_last_payment_method') as any) || '현금';
       setPaymentMethod(lastPay);
       setNotes('');
+      setTravelFeePaid(isTravelFeeMode);
+      setShowSponsorshipInput(false);
       setSelectedSlot(settings.formtecStartSlot || 1);
     }
     setEditName(member.name);
@@ -187,6 +205,8 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
       address: finalAddress,
       feeAmount,
       paymentMethod,
+      travelFeePaid: isTravelFeeMode ? travelFeePaid : existingRecord?.travelFeePaid,
+      travelFeeAmount: isTravelFeeMode && travelFeePaid ? configuredTravelFeeAmount : existingRecord?.travelFeeAmount,
       notes: notes.trim(),
       timestamp: existingRecord ? existingRecord.timestamp : timeStr,
       year: existingRecord?.year || settings.eventYear || CURRENT_EVENT.year,
@@ -239,11 +259,20 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
               <UserCheck className="w-5 h-5 text-sky-400" />
             )}
             <h3 className="text-base sm:text-lg font-bold">
-              {existingRecord ? '당일 접수 내역 & 회비 수정 (수정 모드)' : '당일 현장 접수 & 회비 입력'}
+              {existingRecord
+                ? '당일 접수 내역 & 내역 수정 (수정 모드)'
+                : isTravelFeeMode
+                ? '당일 현장 접수 & 교통비 지급'
+                : '당일 현장 접수 & 회비 입력'}
             </h3>
             {existingRecord ? (
               <span className="text-xs bg-amber-800 text-amber-200 px-2.5 py-0.5 rounded-full border border-amber-600 font-extrabold flex items-center gap-1">
-                기존 납부: {existingRecord.feeAmount.toLocaleString()}원 ({existingRecord.paymentMethod})
+                {existingRecord.travelFeePaid ? (
+                  <>🚗 교통비 {(existingRecord.travelFeeAmount || 50000).toLocaleString()}원 수령완료</>
+                ) : (
+                  <>기존 납부: {existingRecord.feeAmount.toLocaleString()}원 ({existingRecord.paymentMethod})</>
+                )}
+                {existingRecord.feeAmount > 0 && ` + 찬조: ${existingRecord.feeAmount.toLocaleString()}원`}
               </span>
             ) : (
               <button
@@ -529,65 +558,196 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
               </div>
             </div>
 
-            {/* 회비 금액 선택 */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                <span>당일 회비 / 참가비</span>
-                <span className="text-sky-600 font-extrabold text-sm">
-                  {feeAmount.toLocaleString()}원
-                </span>
-              </label>
-              <div className="grid grid-cols-3 gap-1.5 mb-2">
-                {quickAmounts.map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setFeeAmount(amt)}
-                    className={`py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                      feeAmount === amt
-                        ? 'bg-sky-600 text-white border-sky-600 shadow-sm font-bold'
-                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-                    }`}
-                  >
-                    {amt === 0 ? '면제 (0원)' : `${amt.toLocaleString()}원`}
-                  </button>
-                ))}
-              </div>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                <input
-                  type="number"
-                  step="5000"
-                  placeholder="직접 금액 입력 (원)"
-                  value={feeAmount === 0 ? '' : feeAmount}
-                  onChange={(e) => setFeeAmount(Number(e.target.value) || 0)}
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 font-semibold"
-                />
-              </div>
-              {feeAmount >= 100000 && (
-                <div className="mt-2.5 p-3 bg-amber-50 border-2 border-amber-400 rounded-xl flex items-center justify-between gap-2.5 shadow-xs animate-in fade-in">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
-                    <div>
-                      <div className="text-xs font-black text-amber-950">
-                        10만원 이상 특별 협찬/지원금 ({feeAmount.toLocaleString()}원)
-                      </div>
-                      <div className="text-[11px] text-amber-800">
-                        성함({editName || member.name})·문파·세수·금액이 자동 연계되어 80mm 리본으로 출력됩니다.
+            {/* 회비 / 교통비 지급 섹션 */}
+            {isTravelFeeMode ? (
+              <div className="space-y-3">
+                {/* 🚗 교통비 지급 카드 */}
+                <div
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    travelFeePaid
+                      ? 'bg-amber-50/90 border-amber-400 shadow-xs'
+                      : 'bg-slate-50 border-slate-300 opacity-70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">🚗</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-amber-950">참석 여비(교통비) 5만원 지급</span>
+                          <span className="text-[10px] bg-amber-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-xs">
+                            {configuredTravelFeeAmount.toLocaleString()}원
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-800 mt-0.5">
+                          ※ 본 행사는 회비가 0원(면제)이며, 오신 종친께 현금 봉투를 지급합니다.
+                        </p>
                       </div>
                     </div>
+
+                    <label
+                      className={`px-3 py-2 rounded-xl border-2 flex items-center gap-2 cursor-pointer transition-all select-none shrink-0 ${
+                        travelFeePaid
+                          ? 'bg-amber-500 border-amber-600 text-white font-black shadow-md'
+                          : 'bg-white border-slate-300 text-slate-600 font-bold'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={travelFeePaid}
+                        onChange={(e) => setTravelFeePaid(e.target.checked)}
+                        className="w-4 h-4 rounded text-amber-600 cursor-pointer"
+                      />
+                      <span className="text-xs whitespace-nowrap">
+                        {travelFeePaid ? '현금 봉투 지급' : '지급 안 함'}
+                      </span>
+                    </label>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsSponsorshipOpen(true)}
-                    className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-black rounded-lg shadow-md flex items-center gap-1.5 shrink-0 transition-all cursor-pointer border border-amber-500"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-white" />
-                    <span>📜 협찬 리본 출력 ➔</span>
-                  </button>
+
+                  {existingRecord?.travelFeePaid && (
+                    <div className="mt-2.5 pt-2 border-t border-amber-200 flex items-center justify-between text-[11px] font-bold text-emerald-800">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>
+                          이미 교통비({(existingRecord.travelFeeAmount || configuredTravelFeeAmount).toLocaleString()}원) 수령이 등록된 종친입니다.
+                        </span>
+                      </span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                        수령 완료됨
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                {/* 특별 찬조금 입력 (선택 사항) */}
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <span>특별 찬조·협찬금 (선택 사항)</span>
+                      {feeAmount > 0 && (
+                        <span className="text-amber-600 font-black">
+                          {feeAmount.toLocaleString()}원
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSponsorshipInput(!showSponsorshipInput)}
+                      className="text-xs font-bold text-sky-600 hover:text-sky-700 underline cursor-pointer"
+                    >
+                      {showSponsorshipInput ? '닫기' : feeAmount > 0 ? '찬조금 수정' : '+ 찬조금 내신 경우 입력'}
+                    </button>
+                  </div>
+
+                  {showSponsorshipInput && (
+                    <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-2 animate-in fade-in">
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[0, 50000, 100000, 200000].map((amt) => (
+                          <button
+                            key={amt}
+                            type="button"
+                            onClick={() => setFeeAmount(amt)}
+                            className={`py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                              feeAmount === amt
+                                ? 'bg-amber-600 text-white border-amber-600 shadow-sm font-bold'
+                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                            }`}
+                          >
+                            {amt === 0 ? '찬조 없음' : `${amt.toLocaleString()}원`}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                        <input
+                          type="number"
+                          step="10000"
+                          placeholder="직접 찬조금액 입력 (원)"
+                          value={feeAmount === 0 ? '' : feeAmount}
+                          onChange={(e) => setFeeAmount(Number(e.target.value) || 0)}
+                          className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 font-semibold"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {feeAmount >= 100000 && (
+                    <div className="mt-2.5 p-2.5 bg-amber-50 border border-amber-300 rounded-lg flex items-center justify-between gap-2 animate-in fade-in">
+                      <div className="text-[11px] text-amber-900 font-bold">
+                        🌟 10만원 이상 특별 찬조금 ({feeAmount.toLocaleString()}원)
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsSponsorshipOpen(true)}
+                        className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold rounded-md shadow-xs flex items-center gap-1 cursor-pointer"
+                      >
+                        <Printer className="w-3 h-3 text-white" />
+                        <span>리본 출력</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>당일 회비 / 참가비</span>
+                  <span className="text-sky-600 font-extrabold text-sm">
+                    {feeAmount.toLocaleString()}원
+                  </span>
+                </label>
+                <div className="grid grid-cols-3 gap-1.5 mb-2">
+                  {quickAmounts.map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setFeeAmount(amt)}
+                      className={`py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                        feeAmount === amt
+                          ? 'bg-sky-600 text-white border-sky-600 shadow-sm font-bold'
+                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      {amt === 0 ? '면제 (0원)' : `${amt.toLocaleString()}원`}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <input
+                    type="number"
+                    step="5000"
+                    placeholder="직접 금액 입력 (원)"
+                    value={feeAmount === 0 ? '' : feeAmount}
+                    onChange={(e) => setFeeAmount(Number(e.target.value) || 0)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 font-semibold"
+                  />
+                </div>
+                {feeAmount >= 100000 && (
+                  <div className="mt-2.5 p-3 bg-amber-50 border-2 border-amber-400 rounded-xl flex items-center justify-between gap-2.5 shadow-xs animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                      <div>
+                        <div className="text-xs font-black text-amber-950">
+                          10만원 이상 특별 협찬/지원금 ({feeAmount.toLocaleString()}원)
+                        </div>
+                        <div className="text-[11px] text-amber-800">
+                          성함({editName || member.name})·문파·세수·금액이 자동 연계되어 80mm 리본으로 출력됩니다.
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsSponsorshipOpen(true)}
+                      className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-black rounded-lg shadow-md flex items-center gap-1.5 shrink-0 transition-all cursor-pointer border border-amber-500"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-white" />
+                      <span>📜 협찬 리본 출력 ➔</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 납부 방식 */}
             <div>

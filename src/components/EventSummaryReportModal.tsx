@@ -60,7 +60,15 @@ export const EventSummaryReportModal: React.FC<EventSummaryReportModalProps> = (
     return expenses.filter((e) => e.eventId === event.id);
   }, [expenses, event.id]);
 
-  const totalExpense = eventExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  // 교통비 지급 행사일 때 자동 연동되는 교통비 합계
+  const autoTravelFeeCount = useMemo(() => {
+    if (!event.isTravelFeeEvent) return 0;
+    return currentEventAttendance.filter((r) => r.travelFeePaid !== false).length;
+  }, [event.isTravelFeeEvent, currentEventAttendance]);
+
+  const autoTravelFeeAmount = autoTravelFeeCount * (event.travelFeeAmount || 50000);
+
+  const totalExpense = eventExpenses.reduce((sum, e) => sum + (e.amount || 0), 0) + autoTravelFeeAmount;
   const balance = totalIncome - totalExpense;
 
   // 비목별 지출 집계
@@ -77,12 +85,17 @@ export const EventSummaryReportModal: React.FC<EventSummaryReportModalProps> = (
   const categoryTotals = categories
     .map((cat) => {
       const items = eventExpenses.filter((e) => e.category === cat);
-      const amount = items.reduce((sum, e) => sum + (e.amount || 0), 0);
+      let amount = items.reduce((sum, e) => sum + (e.amount || 0), 0);
+      let count = items.length;
+      if (cat === '교통·운임' && autoTravelFeeAmount > 0) {
+        amount += autoTravelFeeAmount;
+        count += 1;
+      }
       return {
         category: cat,
         items,
         amount,
-        count: items.length,
+        count,
         ratio: totalExpense > 0 ? ((amount / totalExpense) * 100).toFixed(1) : '0',
       };
     })
@@ -157,8 +170,8 @@ ${topBranches}${branchStats.length > 5 ? `\n  외 ${branchStats.length - 5}개 �
 
 2. 행사 수지 결산 총괄
 - 총 수입: ${totalIncome.toLocaleString()}원
-  (일반회비: ${regularTotal.toLocaleString()}원 / 특별찬조: ${sponsorTotal.toLocaleString()}원)
-- 총 지출: ${totalExpense.toLocaleString()}원 (총 ${eventExpenses.length}건)
+  (${event.isTravelFeeEvent ? '회비 면제' : `일반회비: ${regularTotal.toLocaleString()}원`} / 특별찬조: ${sponsorTotal.toLocaleString()}원)
+- 총 지출: ${totalExpense.toLocaleString()}원${autoTravelFeeAmount > 0 ? ` (교통비 ${autoTravelFeeCount}명 ${autoTravelFeeAmount.toLocaleString()}원 포함)` : ` (총 ${eventExpenses.length}건)`}
 - 차인 잔액: ${balance >= 0 ? '+' : ''}${balance.toLocaleString()}원 (차기 이월)
 
 3. 특별 찬조금 협찬 종친 명단 (존칭 생략)

@@ -41,6 +41,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [fontFamily, setFontFamily] = useState(settings.fontFamily || 'gungsuh');
   const [headerBgColor, setHeaderBgColor] = useState(settings.headerBgColor || '#8cc0ec');
   const [showWatermark, setShowWatermark] = useState(settings.showWatermark !== false);
+  const [isTravelFeeEvent, setIsTravelFeeEvent] = useState<boolean>(settings.isTravelFeeEvent || false);
+  const [travelFeeAmount, setTravelFeeAmount] = useState<number>(settings.travelFeeAmount || 50000);
 
   useEffect(() => {
     const yr = settings.eventYear || currentYear;
@@ -53,6 +55,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setFontFamily(settings.fontFamily || 'gungsuh');
     setHeaderBgColor(settings.headerBgColor || '#8cc0ec');
     setShowWatermark(settings.showWatermark !== false);
+    setIsTravelFeeEvent(settings.isTravelFeeEvent || false);
+    setTravelFeeAmount(settings.travelFeeAmount || 50000);
   }, [settings, isOpen]);
 
   const handleSave = () => {
@@ -69,6 +73,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       fontFamily,
       headerBgColor,
       showWatermark,
+      isTravelFeeEvent,
+      travelFeeAmount: Number(travelFeeAmount) || 50000,
     };
     onSave(updated);
     onClose();
@@ -83,6 +89,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // 역대 출석 이력 사진 및 종친회 실제 공식 행사명 프리셋 (올해 연도 자동 결합)
   const eventBaseNames = [
+    { title: '용헌공파종중 정기총회 및 시제', desc: '11월 용헌공파 총회/시제 (교통비 지원)' },
     { title: '정기총회 및 시제', desc: '서울종친회 대표 메인 행사' },
     { title: '가을 정기시제', desc: '역대 이력 실제 행사 (추향제)' },
     { title: '정기총회', desc: '역대 이력 실제 행사' },
@@ -243,6 +250,81 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 })}
               </div>
             </div>
+          </div>
+
+          {/* 1-2. 🚗 참석 종친 교통비(거마비) 지급 행사 모드 */}
+          <div
+            className={`p-4 rounded-xl border transition-all ${
+              isTravelFeeEvent
+                ? 'bg-amber-50/90 border-amber-400 ring-2 ring-amber-200'
+                : 'bg-slate-50 border-slate-200'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🚗</span>
+                <div>
+                  <div className="text-xs font-black text-slate-900 flex items-center gap-2">
+                    <span>참석 종친 교통비(거마비) 지급 행사 모드</span>
+                    {isTravelFeeEvent ? (
+                      <span className="text-[10px] bg-amber-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-xs">
+                        활성화됨 (회비 0원)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-1.5 py-0.5 rounded">
+                        일반 행사
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    11월 용헌문중 시제처럼 오신 분들께 여비를 드리는 행사일 때 켜주세요. 접수 시 <strong>회비가 0원으로 자동 처리</strong>되고 1인당 교통비 지급 및 <strong>A4 수령 서명대장</strong>이 연동됩니다.
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+                <input
+                  type="checkbox"
+                  checked={isTravelFeeEvent}
+                  onChange={(e) => setIsTravelFeeEvent(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+              </label>
+            </div>
+
+            {isTravelFeeEvent && (
+              <div className="mt-3 pt-3 border-t border-amber-200/80 flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-amber-950">1인당 교통비 지급 기준액:</span>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      step="10000"
+                      value={travelFeeAmount}
+                      onChange={(e) => setTravelFeeAmount(Number(e.target.value) || 0)}
+                      className="w-28 px-2.5 py-1 text-xs font-black text-right border border-amber-400 rounded-lg focus:ring-2 focus:ring-amber-500 bg-white"
+                    />
+                    <span className="text-xs font-bold text-amber-900">원</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[30000, 50000, 100000].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setTravelFeeAmount(amt)}
+                      className={`px-2 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer border ${
+                        travelFeeAmount === amt
+                          ? 'bg-amber-600 text-white border-amber-600'
+                          : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300'
+                      }`}
+                    >
+                      {amt / 10000}만원
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 2. 명찰 하단 문구 인쇄 방식 선택 */}

@@ -30,6 +30,8 @@ export const DEFAULT_SETTINGS: LabelSettings = {
   eventName: '2026년 정기총회 및 시제',
   eventYear: 2026,
   showWatermark: true,
+  isTravelFeeEvent: false,
+  travelFeeAmount: 50000,
 };
 
 // 역대 시제/총회 샘플 출석 이력 시드 데이터 (과거 2024년, 2025년 기록)
@@ -336,6 +338,8 @@ export function loadEvents(): EventRecord[] {
           ...ev,
           presidentName: ev.presidentName || '이 기 석',
           auditors: ev.auditors && ev.auditors.length > 0 ? ev.auditors : ['이 종 춘', '이 원 구'],
+          isTravelFeeEvent: !!ev.isTravelFeeEvent,
+          travelFeeAmount: ev.travelFeeAmount || 50000,
         }));
       }
     }

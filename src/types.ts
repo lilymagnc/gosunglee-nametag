@@ -35,6 +35,8 @@ export interface AttendanceRecord {
   isNewMember: boolean;  // 당일 신규 등록 여부
   printedCount: number;  // 명찰 출력 횟수
   printSlot?: number;    // 폼텍 8칸 출력 시 사용된 슬롯 번호 (1~8)
+  travelFeePaid?: boolean; // 🚗 참석 교통비(50,000원 등) 수령/지급 여부
+  travelFeeAmount?: number; // 지급된 교통비 금액
 }
 
 export type PaperSize = 'formtec_3114' | 'label_90x60' | 'label_80x60';
@@ -58,6 +60,9 @@ export interface LabelSettings {
   eventYear: number;      // 행사 연도 (기본값: 2026)
   // 고성이씨 문양 워터마크 배경 표시 여부
   showWatermark?: boolean;
+  // 🚗 참석 종친 교통비(거마비) 지급 행사 모드 (회비 0원)
+  isTravelFeeEvent?: boolean;
+  travelFeeAmount?: number; // 1인당 교통비 지급액 (기본값: 50,000원)
 }
 
 // ==========================================
@@ -71,6 +76,8 @@ export interface EventRecord {
   location?: string;       // 장소 (e.g. "서울 종친회관 대강당")
   presidentName?: string;  // 행사 회장 성명 (기본값: "이 기 석")
   auditors?: string[];     // 행사 감사 성명 목록 (기본값: ["이 종 춘", "이 원 구"])
+  isTravelFeeEvent?: boolean; // 🚗 참석 종친 교통비 지급 행사 여부
+  travelFeeAmount?: number;   // 1인당 교통비 지급액 (기본값: 50,000원)
   status: 'active' | 'archived'; // 진행 중 vs 보관됨
   createdAt: string;
 }

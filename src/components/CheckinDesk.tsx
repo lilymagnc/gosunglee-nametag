@@ -824,7 +824,11 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
         onClose={() => setIsTravelFeeModalOpen(false)}
         settings={settings}
         attendanceRecords={attendanceRecords}
-        presidentName="이 기 석"
+        presidentName={
+          settings.eventName?.includes('용헌') || settings.footerText?.includes('용헌') || settings.isTravelFeeEvent
+            ? '이 삼 렬'
+            : '이 기 석'
+        }
       />
     </div>
   );

@@ -105,6 +105,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       group: '⭐ 행사명 및 대표 종중/종친회',
       items: [
         { label: `[현재 공식 행사명] ${eventName}`, text: eventName },
+        { label: '용헌공파종중 (한자 정통) - 固 城 李 氏 容 軒 公 派 宗 中', text: '固 城 李 氏 容 軒 公 派 宗 中' },
+        { label: '용헌공파종중 (한글) - 고 성 이 씨 용 헌 공 파 종 중', text: '고 성 이 씨 용 헌 공 파 종 중' },
         { label: '용헌종중 (한자) - 固 城 李 氏 容 軒 宗 中', text: '固 城 李 氏 容 軒 宗 中' },
         { label: '용헌종중 (국한문) - 고 성 이 씨 용 헌 宗 中', text: '고 성 이 씨 용 헌 宗 中' },
         { label: '용헌공파 (한자) - 固 城 李 氏 容 軒 公 派', text: '固 城 李 氏 容 軒 公 派' },

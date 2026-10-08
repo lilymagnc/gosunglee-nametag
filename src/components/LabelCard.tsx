@@ -48,8 +48,9 @@ export const LabelCard: React.FC<LabelCardProps> = ({
       return `${trimmed.slice(0, 2)}\n${trimmed.slice(2)}`;
     }
 
-    // 5자: 의미 단위 2/3 또는 3/2 분리
+    // 5자: 단일 고유 명칭(예: "서울종친회")은 1줄 유지, 복합 직책은 의미 단위 분리
     if (trimmed.length === 5) {
+      if (trimmed === '서울종친회') return '서울종친회';
       if (trimmed === '대종회회장') return '대종회\n회장';
       if (trimmed === '여성부회장') return '여성\n부회장';
       if (trimmed === '수석부회장') return '수석\n부회장';
@@ -59,14 +60,23 @@ export const LabelCard: React.FC<LabelCardProps> = ({
       return `${trimmed.slice(0, 2)}\n${trimmed.slice(2)}`;
     }
 
-    // 6자: "호군공파회장" 등 3/3으로 쪼개면 "파"가 찢어지므로, 2자씩 3줄(2/2/2)로 단정하게 배치!
-    // ("호군\n공파\n회장") -> 가로 폭도 2자만 차지하여 이름이 오른쪽으로 밀리지 않음!
+    // 6자: "호군공파회장" 등
     if (trimmed.length === 6) {
+      if (trimmed.endsWith('회장')) {
+        return `${trimmed.slice(0, 4)}\n회장`;
+      }
       return `${trimmed.slice(0, 2)}\n${trimmed.slice(2, 4)}\n${trimmed.slice(4)}`;
     }
 
     // 7자 이상:
     if (trimmed.length > 6) {
+      if (trimmed === '서울종친회회장') return '서울종친회\n회장';
+      if (trimmed.endsWith('부회장')) {
+        return `${trimmed.slice(0, trimmed.length - 3)}\n부회장`;
+      }
+      if (trimmed.endsWith('회장')) {
+        return `${trimmed.slice(0, trimmed.length - 2)}\n회장`;
+      }
       if (trimmed === '전자족보운영위원') return '전자족보\n운영위원';
       if (trimmed.endsWith('운영위원') && trimmed.length === 8) {
         return `${trimmed.slice(0, 4)}\n운영위원`;
@@ -192,8 +202,11 @@ export const LabelCard: React.FC<LabelCardProps> = ({
       : is80x60 ? '46px' : '52px';
 
   // 직책 폰트 크기 및 행간 (글자수와 줄수에 따른 정밀 조절)
+  // ⭐ 5자 (예: '서울종친회') 1라인 출력 지원: 11.5pt(화면 12px) 및 줄별 whitespace-nowrap 적용
   const printRoleFontSize =
-    roleMaxLineLen >= 4
+    roleMaxLineLen >= 5
+      ? '11.5pt'
+      : roleMaxLineLen === 4
       ? roleLineCount >= 3 ? '10.5pt' : '12.5pt'
       : roleLineCount >= 3
       ? '11.5pt'
@@ -205,7 +218,9 @@ export const LabelCard: React.FC<LabelCardProps> = ({
     roleLineCount >= 3 ? '1.08' : '1.14';
 
   const previewRoleFontSize =
-    roleMaxLineLen >= 4
+    roleMaxLineLen >= 5
+      ? '12px'
+      : roleMaxLineLen === 4
       ? roleLineCount >= 3 ? '11.5px' : '13.5px'
       : roleLineCount >= 3
       ? '12.5px'
@@ -309,21 +324,26 @@ export const LabelCard: React.FC<LabelCardProps> = ({
             </div>
           )}
 
-          {/* 좌측 직책 영역 (18~20% 고정 확보하여 직책 유무 상관없이 모든 명찰의 이름 위치가 100% 일치 통일!) */}
+          {/* 좌측 직책 영역 (직책 유무 상관없이 중앙 이름의 좌표는 100% 불변 고정!) */}
           <div
-            className="flex flex-col justify-center items-start text-left shrink-0 relative z-10"
+            className="flex flex-col justify-center items-end shrink-0 relative z-10"
             style={{ width: printRoleWidth, minWidth: printRoleWidth }}
           >
             {formattedRole ? (
               <div
-                className="font-black text-black whitespace-pre-line tracking-tight pl-0.5"
+                className="font-black text-black text-center tracking-tight pr-0.5"
                 style={{
                   fontSize: printRoleFontSize,
                   lineHeight: printRoleLineHeight,
                   fontFamily: '"Malgun Gothic", sans-serif',
+                  transform: is80x60 ? 'translateX(2mm)' : 'translateX(3mm)',
                 }}
               >
-                {formattedRole}
+                {formattedRole.split('\n').map((line, idx) => (
+                  <div key={idx} className="whitespace-nowrap leading-tight py-[0.5px]">
+                    {line}
+                  </div>
+                ))}
               </div>
             ) : null}
           </div>
@@ -473,21 +493,26 @@ export const LabelCard: React.FC<LabelCardProps> = ({
           </div>
         )}
 
-        {/* 좌측 직책 영역 (18~20% 고정 확보하여 직책 유무 상관없이 통일감 유지) */}
+        {/* 좌측 직책 영역 (직책 유무 상관없이 중앙 이름의 좌표는 100% 불변 고정!) */}
         <div
-          className="flex flex-col justify-center items-start text-left shrink-0 z-10"
+          className="flex flex-col justify-center items-end shrink-0 z-10"
           style={{ width: previewRoleWidth, minWidth: previewRoleWidth }}
         >
           {formattedRole ? (
             <div
-              className="font-black text-black whitespace-pre-line tracking-tight pl-0.5"
+              className="font-black text-black text-center tracking-tight pr-1"
               style={{
                 fontSize: previewRoleFontSize,
                 lineHeight: previewRoleLineHeight,
                 fontFamily: '"Malgun Gothic", sans-serif',
+                transform: is80x60 ? 'translateX(6px)' : 'translateX(9px)',
               }}
             >
-              {formattedRole}
+              {formattedRole.split('\n').map((line, idx) => (
+                <div key={idx} className="whitespace-nowrap leading-tight py-[1px]">
+                  {line}
+                </div>
+              ))}
             </div>
           ) : null}
         </div>

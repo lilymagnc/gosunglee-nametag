@@ -782,7 +782,10 @@ export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ attendanceRecord
           travelFeeAmount: currentEvent.travelFeeAmount || 50000,
         } as any}
         attendanceRecords={attendanceRecords}
-        presidentName={currentEvent.presidentName || '이 기 석'}
+        presidentName={
+          currentEvent.presidentName ||
+          (currentEvent.name?.includes('용헌') || currentEvent.isTravelFeeEvent ? '이 삼 렬' : '이 기 석')
+        }
       />
     </div>
   );

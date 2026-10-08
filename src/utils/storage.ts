@@ -305,6 +305,19 @@ export const SEED_EVENTS: EventRecord[] = [
     createdAt: '2026-01-01',
   },
   {
+    id: 'event_2026_yongheon',
+    name: '2026년 용헌공파종중 총회 및 시제',
+    year: 2026,
+    date: '2026-11-15',
+    location: '용헌공파 선영 및 제실',
+    presidentName: '이 삼 렬',
+    auditors: ['이 종 춘', '이 원 구'],
+    status: 'active',
+    isTravelFeeEvent: true,
+    travelFeeAmount: 50000,
+    createdAt: '2026-10-08',
+  },
+  {
     id: 'event_2025_autumn',
     name: '2025년 가을 정기시제',
     year: 2025,
@@ -334,13 +347,17 @@ export function loadEvents(): EventRecord[] {
     if (data) {
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((ev) => ({
-          ...ev,
-          presidentName: ev.presidentName || '이 기 석',
-          auditors: ev.auditors && ev.auditors.length > 0 ? ev.auditors : ['이 종 춘', '이 원 구'],
-          isTravelFeeEvent: !!ev.isTravelFeeEvent,
-          travelFeeAmount: ev.travelFeeAmount || 50000,
-        }));
+        return parsed.map((ev) => {
+          const isYongheon = ev.name?.includes('용헌');
+          const defaultPres = isYongheon ? '이 삼 렬' : '이 기 석';
+          return {
+            ...ev,
+            presidentName: ev.presidentName || defaultPres,
+            auditors: ev.auditors && ev.auditors.length > 0 ? ev.auditors : ['이 종 춘', '이 원 구'],
+            isTravelFeeEvent: !!ev.isTravelFeeEvent || isYongheon,
+            travelFeeAmount: ev.travelFeeAmount || 50000,
+          };
+        });
       }
     }
   } catch (e) {

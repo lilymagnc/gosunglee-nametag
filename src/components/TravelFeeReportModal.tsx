@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AttendanceRecord, LabelSettings } from '../types';
 import { X, Printer, Download, Car, CheckCircle2, MapPin, Calendar, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -16,12 +16,37 @@ export const TravelFeeReportModal: React.FC<TravelFeeReportModalProps> = ({
   onClose,
   settings,
   attendanceRecords,
-  presidentName = '이 기 석',
+  presidentName: initialPresidentName,
 }) => {
   if (!isOpen) return null;
 
   const eventName = settings.eventName || '2026년 정기총회 및 시제';
   const travelFeePerPerson = settings.travelFeeAmount || 50000;
+
+  // 문중/종친회 구분 (용헌공파종중 vs 서울종친회)
+  const isYongheon =
+    settings.eventName?.includes('용헌') ||
+    settings.footerText?.includes('용헌') ||
+    settings.isTravelFeeEvent;
+
+  const defaultOrgTitle = isYongheon
+    ? '固 城 李 氏 容 軒 公 派 宗 中'
+    : '固 城 李 氏 서 울 宗 親 會';
+
+  // 용헌종중 회장은 "이 삼 렬", 서울종친회 회장은 "이 기 석"
+  const defaultPresident = isYongheon ? '이 삼 렬' : '이 기 석';
+  const resolvedPresident =
+    initialPresidentName && initialPresidentName !== '이 기 석'
+      ? initialPresidentName
+      : defaultPresident;
+
+  const [president, setPresident] = useState<string>(resolvedPresident);
+  const [orgTitle, setOrgTitle] = useState<string>(defaultOrgTitle);
+
+  useEffect(() => {
+    setPresident(resolvedPresident);
+    setOrgTitle(defaultOrgTitle);
+  }, [resolvedPresident, defaultOrgTitle]);
 
   // 당일 행사 출석 데이터 중 교통비 지급 대상자 추출
   const targetRecords = attendanceRecords.filter((r) => {
@@ -288,7 +313,7 @@ export const TravelFeeReportModal: React.FC<TravelFeeReportModalProps> = ({
             </div>
             <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">${dateText}</div>
             <div class="seal-row">
-              <span>固 城 李 氏 서 울 宗 親 會 회 장 &nbsp;&nbsp; ${presidentName}</span>
+              <span>${orgTitle} 회 장 &nbsp;&nbsp; ${president}</span>
               <span class="seal-mark">直印</span>
             </div>
           </div>
@@ -372,6 +397,33 @@ export const TravelFeeReportModal: React.FC<TravelFeeReportModalProps> = ({
               <Printer className="w-3.5 h-3.5 text-white" />
               <span>A4 서명대장 인쇄</span>
             </button>
+          </div>
+        </div>
+
+        {/* 주최 종중 및 회장 확인/지정 바 */}
+        <div className="px-6 py-2 bg-slate-800 border-b border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 font-bold">주최 문중:</span>
+            <input
+              type="text"
+              value={orgTitle}
+              onChange={(e) => setOrgTitle(e.target.value)}
+              className="px-2.5 py-1 text-xs font-bold text-white bg-slate-900 border border-slate-600 rounded-lg focus:ring-1 focus:ring-amber-400 w-52 sm:w-64"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 font-bold">종중 회장:</span>
+            <input
+              type="text"
+              value={president}
+              onChange={(e) => setPresident(e.target.value)}
+              className="px-2.5 py-1 text-xs font-black text-amber-300 bg-slate-900 border border-slate-600 rounded-lg focus:ring-1 focus:ring-amber-400 w-24 text-center"
+            />
+            {isYongheon && (
+              <span className="text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">
+                용헌종중 회장 이삼렬
+              </span>
+            )}
           </div>
         </div>
 
@@ -479,7 +531,7 @@ export const TravelFeeReportModal: React.FC<TravelFeeReportModalProps> = ({
                 {new Date().getFullYear()}년 {new Date().getMonth() + 1}월 {new Date().getDate()}일
               </div>
               <div className="text-base font-black tracking-wider flex items-center justify-center gap-4 text-slate-900 pt-1">
-                <span>固 城 李 氏 서 울 宗 親 會 회 장 &nbsp;&nbsp; {presidentName}</span>
+                <span>{orgTitle} 회 장 &nbsp;&nbsp; {president}</span>
                 <span className="w-9 h-9 rounded-full border-2 border-dashed border-red-600 flex items-center justify-center text-xs text-red-600 font-bold">
                   直印
                 </span>

@@ -566,6 +566,7 @@ export const App: React.FC = () => {
         {activeTab === 'members' && (
           <MemberList
             members={members}
+            attendanceRecords={attendance}
             settings={settings}
             onUpdateMembers={setMembers}
             onResetToDefault={handleResetMembersToDefault}

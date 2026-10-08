@@ -114,7 +114,13 @@ export const LabelCard: React.FC<LabelCardProps> = ({
     ? mode === 'textOnly' ? 'none' : '2px solid #000000'
     : '1.2px solid #3b82c4';
 
-  const showFooter = mode !== 'textOnly' && settings.showFooter;
+  // 하단 문구 모드 ('preset': 종파/종중 문구, 'eventName': 공식 행사명, 'none': 하단 박스 숨김)
+  const footerType = settings.footerType || (settings.showFooter === false ? 'none' : 'preset');
+  const showFooter = mode !== 'textOnly' && footerType !== 'none';
+  const footerDisplayText =
+    footerType === 'eventName'
+      ? (settings.eventName || `${settings.eventYear || 2026}년 정기총회 및 시제`)
+      : (settings.footerText || '固 城 李 氏 서 울 宗 親 會');
 
   // 상단 파명/세수 라인 중앙 가문 로고 (모드별 흑백/컬러 자동 최적화)
   const headerLogoSrc =
@@ -366,7 +372,7 @@ export const LabelCard: React.FC<LabelCardProps> = ({
                 fontFamily: '"Batang", "Nanum Myeongjo", serif',
               }}
             >
-              {settings.footerText || '固 城 李 氏 서 울 宗 親 會'}
+              {footerDisplayText}
             </div>
           </div>
         )}
@@ -531,7 +537,7 @@ export const LabelCard: React.FC<LabelCardProps> = ({
               fontFamily: '"Batang", "Nanum Myeongjo", serif',
             }}
           >
-            {settings.footerText || '固 城 李 氏 서 울 宗 親 會'}
+            {footerDisplayText}
           </div>
         </div>
       )}

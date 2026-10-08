@@ -43,6 +43,7 @@ export interface LabelSettings {
   paperSize: PaperSize;
   footerText: string;     // 기본값: "固 城 李 氏 서 울 宗 親 會"
   showFooter: boolean;
+  footerType?: 'preset' | 'eventName' | 'none'; // 하단 인쇄 내용: 종파/종중명('preset') vs 공식행사명('eventName') vs 인쇄안함('none')
   headerBgColor: string;  // 기본값: "#8cc0ec" (실물 사진 속 연하늘색)
   fontFamily: 'gungsuh' | 'myeongjo';
   // 인쇄 미세 조정 (mm 단위)

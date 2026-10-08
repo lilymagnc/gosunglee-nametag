@@ -34,8 +34,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [eventName, setEventName] = useState(
     settings.eventName || `${settings.eventYear || currentYear}년 정기총회 및 시제`
   );
+  const [footerType, setFooterType] = useState<'preset' | 'eventName' | 'none'>(
+    settings.footerType || (settings.showFooter === false ? 'none' : 'preset')
+  );
   const [footerText, setFooterText] = useState(settings.footerText || '固 城 李 氏 서 울 宗 親 會');
-  const [showFooter, setShowFooter] = useState(settings.showFooter ?? true);
   const [paperSize, setPaperSize] = useState(settings.paperSize || 'formtec_3114');
   const [thermalMode, setThermalMode] = useState(settings.thermalMode || 'color');
   const [fontFamily, setFontFamily] = useState(settings.fontFamily || 'gungsuh');
@@ -46,8 +48,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const yr = settings.eventYear || currentYear;
     setEventYear(yr);
     setEventName(settings.eventName || `${yr}년 정기총회 및 시제`);
+    setFooterType(settings.footerType || (settings.showFooter === false ? 'none' : 'preset'));
     setFooterText(settings.footerText || '固 城 李 氏 서 울 宗 親 會');
-    setShowFooter(settings.showFooter ?? true);
     setPaperSize(settings.paperSize || 'formtec_3114');
     setThermalMode(settings.thermalMode || 'color');
     setFontFamily(settings.fontFamily || 'gungsuh');
@@ -62,7 +64,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       eventName: eventName.trim() || `${finalYear}년 정기총회 및 시제`,
       eventYear: finalYear,
       footerText: footerText.trim() || '固 城 李 氏 서 울 宗 親 會',
-      showFooter,
+      showFooter: footerType !== 'none',
+      footerType,
       paperSize,
       thermalMode,
       fontFamily,
@@ -91,13 +94,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { title: '신년하례회', desc: '연초 하례회' },
   ];
 
-  const footerPresets = [
-    { label: '한자 정통 (서울종친회)', text: '固 城 李 氏 서 울 宗 親 會' },
-    { label: '한글 표준 (서울종친회)', text: '고 성 이 씨 서 울 종 친 회' },
-    { label: '대종회 (한자)', text: '固 城 李 氏 大 宗 會' },
-    { label: '안정공파 (한자)', text: '固 城 李 氏 安 靖 公 派' },
-    { label: '호군공파 (한자)', text: '固 城 李 氏 湖 軍 公 派' },
-    { label: '사암공파 (한자)', text: '固 城 李 氏 思 菴 公 派' },
+  // 하단 문구 프리셋 (모든 종파 및 대표 종친회/종중/행사명 종합)
+  const footerPresetGroups = [
+    {
+      group: '⭐ 행사명 및 대표 종중/종친회',
+      items: [
+        { label: `[현재 공식 행사명] ${eventName}`, text: eventName },
+        { label: '용헌종중 (한자) - 固 城 李 氏 容 軒 宗 中', text: '固 城 李 氏 容 軒 宗 中' },
+        { label: '용헌종중 (국한문) - 고 성 이 씨 용 헌 宗 中', text: '고 성 이 씨 용 헌 宗 中' },
+        { label: '용헌공파 (한자) - 固 城 李 氏 容 軒 公 派', text: '固 城 李 氏 容 軒 公 派' },
+        { label: '용헌공파 (한글) - 고 성 이 씨 용 헌 공 파', text: '고 성 이 씨 용 헌 공 파' },
+        { label: '서울종친회 (한자 정통) - 固 城 李 氏 서 울 宗 親 會', text: '固 城 李 氏 서 울 宗 親 會' },
+        { label: '서울종친회 (한글 표준) - 고 성 이 씨 서 울 종 친 회', text: '고 성 이 씨 서 울 종 친 회' },
+        { label: '대종회 (한자) - 固 城 李 氏 大 宗 會', text: '固 城 李 氏 大 宗 會' },
+        { label: '대종회 (한글) - 고 성 이 씨 대 종 회', text: '고 성 이 씨 대 종 회' },
+        { label: '광모재 시제 (한자) - 廣 牟 齋 時 祭', text: '廣 牟 齋 時 祭' },
+        { label: '광모재 시제 (한글) - 광 모 재 시 제', text: '광 모 재 시 제' },
+      ],
+    },
+    {
+      group: '📜 고성이씨 주요 공파 (한자 정통)',
+      items: [
+        { label: '참판공파 - 固 城 李 氏 參 判 公 派', text: '固 城 李 氏 參 判 公 派' },
+        { label: '둔재공파 - 固 城 李 氏 遁 齋 公 派', text: '固 城 李 氏 遁 齋 公 派' },
+        { label: '사암공파 - 固 城 李 氏 思 菴 公 派', text: '固 城 李 氏 思 菴 公 派' },
+        { label: '호군공파 - 固 城 李 氏 湖 軍 公 派', text: '固 城 李 氏 湖 軍 公 派' },
+        { label: '도촌공파 - 固 城 李 氏 桃 村 公 派', text: '固 城 李 氏 桃 村 公 派' },
+        { label: '은암공파 - 固 城 李 氏 隱 庵 公 派', text: '固 城 李 氏 隱 庵 公 派' },
+        { label: '좌윤공파 - 固 城 李 氏 左 尹 公 派', text: '固 城 李 氏 左 尹 公 派' },
+        { label: '병사공파 - 固 城 李 氏 兵 使 公 派', text: '固 城 李 氏 兵 使 公 派' },
+        { label: '안정공파 - 固 城 李 氏 安 靖 公 派', text: '固 城 李 氏 安 靖 公 派' },
+        { label: '동주공파 - 固 城 李 氏 東 洲 公 派', text: '固 城 李 氏 東 洲 公 派' },
+        { label: '판서공파 - 固 城 李 氏 判 書 公 派', text: '固 城 李 氏 判 書 公 派' },
+        { label: '문용공파 - 固 城 李 氏 文 容 公 派', text: '固 城 李 氏 文 容 公 派' },
+        { label: '장령공파 - 固 城 李 氏 掌 令 公 派', text: '固 城 李 氏 掌 令 公 派' },
+        { label: '사직공파 - 固 城 李 氏 司 直 公 派', text: '固 城 李 氏 司 直 公 派' },
+        { label: '감찰공파 - 固 城 李 氏 監 察 公 派', text: '固 城 李 氏 監 察 公 派' },
+        { label: '현령공파 - 固 城 李 氏 縣 令 公 派', text: '固 城 李 氏 縣 令 公 派' },
+        { label: '군수공파 - 固 城 李 氏 郡 守 公 派', text: '固 城 李 氏 郡 守 公 派' },
+        { label: '목사공파 - 固 城 李 氏 牧 使 公 派', text: '固 城 李 氏 牧 使 公 派' },
+        { label: '첨정공파 - 固 城 李 氏 僉 正 公 派', text: '固 城 李 氏 僉 正 公 派' },
+        { label: '참봉공파 - 固 城 李 氏 參 奉 公 派', text: '固 城 李 氏 參 奉 公 派' },
+      ],
+    },
+    {
+      group: '🇰🇷 고성이씨 주요 공파 (한글)',
+      items: [
+        { label: '참판공파 - 고 성 이 씨 참 판 공 파', text: '고 성 이 씨 참 판 공 파' },
+        { label: '둔재공파 - 고 성 이 씨 둔 재 공 파', text: '고 성 이 씨 둔 재 공 파' },
+        { label: '사암공파 - 고 성 이 씨 사 암 공 파', text: '고 성 이 씨 사 암 공 파' },
+        { label: '호군공파 - 고 성 이 씨 호 군 공 파', text: '고 성 이 씨 호 군 공 파' },
+        { label: '도촌공파 - 고 성 이 씨 도 촌 공 파', text: '고 성 이 씨 도 촌 공 파' },
+        { label: '은암공파 - 고 성 이 씨 은 암 공 파', text: '고 성 이 씨 은 암 공 파' },
+        { label: '좌윤공파 - 고 성 이 씨 좌 윤 공 파', text: '고 성 이 씨 좌 윤 공 파' },
+        { label: '병사공파 - 고 성 이 씨 병 사 공 파', text: '고 성 이 씨 병 사 공 파' },
+        { label: '안정공파 - 고 성 이 씨 안 정 공 파', text: '고 성 이 씨 안 정 공 파' },
+        { label: '동주공파 - 고 성 이 씨 동 주 공 파', text: '고 성 이 씨 동 주 공 파' },
+        { label: '판서공파 - 고 성 이 씨 판 서 공 파', text: '고 성 이 씨 판 서 공 파' },
+        { label: '문용공파 - 고 성 이 씨 문 용 공 파', text: '고 성 이 씨 문 용 공 파' },
+      ],
+    },
   ];
 
   const colorPresets = [
@@ -189,55 +245,144 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* 2. 명찰 하단 문구 설정 */}
+          {/* 2. 명찰 하단 문구 인쇄 방식 선택 */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                <FileText className="w-4 h-4 text-emerald-600" />
-                <span>2. 명찰 하단 문구 설정</span>
+            <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+              <FileText className="w-4 h-4 text-emerald-600" />
+              <span>2. 명찰 하단 박스에 무엇을 인쇄할까요?</span>
+            </div>
+
+            {/* 3대 선택 옵션 (라디오 카드) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {/* 옵션 1: 공식 행사명 인쇄 */}
+              <button
+                type="button"
+                onClick={() => setFooterType('eventName')}
+                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                  footerType === 'eventName'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-300'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="font-extrabold text-xs">① 공식 행사명 인쇄</span>
+                  <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] ${
+                    footerType === 'eventName' ? 'border-white bg-white text-emerald-700 font-black' : 'border-slate-400'
+                  }`}>
+                    {footerType === 'eventName' && '✓'}
+                  </span>
+                </div>
+                <p className={`text-[10px] leading-tight ${footerType === 'eventName' ? 'text-emerald-100' : 'text-slate-500'}`}>
+                  1번의 행사명({eventName})을 명찰 하단에 자동 출력
+                </p>
+              </button>
+
+              {/* 옵션 2: 종친회 / 종중 / 공파명 인쇄 */}
+              <button
+                type="button"
+                onClick={() => setFooterType('preset')}
+                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                  footerType === 'preset'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-300'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="font-extrabold text-xs">② 종친회·종중·공파명</span>
+                  <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] ${
+                    footerType === 'preset' ? 'border-white bg-white text-emerald-700 font-black' : 'border-slate-400'
+                  }`}>
+                    {footerType === 'preset' && '✓'}
+                  </span>
+                </div>
+                <p className={`text-[10px] leading-tight ${footerType === 'preset' ? 'text-emerald-100' : 'text-slate-500'}`}>
+                  서울종친회, 용헌종중, 대종회 등 선택 출력
+                </p>
+              </button>
+
+              {/* 옵션 3: 하단 문구 없음 (공백) */}
+              <button
+                type="button"
+                onClick={() => setFooterType('none')}
+                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                  footerType === 'none'
+                    ? 'bg-slate-800 text-white border-slate-800 shadow-md ring-2 ring-slate-400'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="font-extrabold text-xs">③ 하단 문구 없음 (공백)</span>
+                  <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] ${
+                    footerType === 'none' ? 'border-white bg-white text-slate-900 font-black' : 'border-slate-400'
+                  }`}>
+                    {footerType === 'none' && '✓'}
+                  </span>
+                </div>
+                <p className={`text-[10px] leading-tight ${footerType === 'none' ? 'text-slate-300' : 'text-slate-500'}`}>
+                  하단 박스를 숨기고 깔끔하게 인쇄
+                </p>
+              </button>
+            </div>
+
+            {/* 세부 옵션: 옵션 1 (공식 행사명) 선택 시 */}
+            {footerType === 'eventName' && (
+              <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-300 space-y-1 animate-in fade-in">
+                <label className="block text-emerald-950 font-bold text-[11px]">명찰 하단에 인쇄될 공식 행사명:</label>
+                <div className="font-black text-emerald-900 text-sm tracking-wider px-3 py-1.5 bg-white rounded border border-emerald-200">
+                  {eventName}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  💡 행사명을 변경하시려면 상단 <strong>1. 공식 행사명 및 기준 연도 설정</strong>에서 수정하시면 여기에 자동 반영됩니다.
+                </p>
               </div>
-              <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 font-bold">
-                <input
-                  type="checkbox"
-                  checked={showFooter}
-                  onChange={(e) => setShowFooter(e.target.checked)}
-                  className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"
-                />
-                하단 문구 인쇄 켜기
-              </label>
-            </div>
+            )}
 
-            <div>
-              <label className="block text-slate-700 font-bold mb-1">하단 인쇄 텍스트</label>
-              <input
-                type="text"
-                value={footerText}
-                onChange={(e) => setFooterText(e.target.value)}
-                placeholder="예: 固 城 李 氏 서 울 宗 親 會"
-                disabled={!showFooter}
-                className="w-full px-3 py-2 text-sm font-semibold border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 bg-white tracking-widest disabled:bg-slate-100 disabled:text-slate-400"
-              />
-            </div>
+            {/* 세부 옵션: 옵션 2 (종친회/종중/공파) 선택 시 */}
+            {footerType === 'preset' && (
+              <div className="p-3 bg-white rounded-lg border border-emerald-300 space-y-2.5 animate-in fade-in">
+                <div>
+                  <label className="block text-slate-600 font-bold text-[11px] mb-1">
+                    종파 / 종중 / 총회 드롭다운 선택
+                  </label>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) setFooterText(e.target.value);
+                    }}
+                    value={footerPresetGroups.some(g => g.items.some(i => i.text === footerText)) ? footerText : ''}
+                    className="w-full px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white"
+                  >
+                    <option value="">-- 종파 / 종중 / 총회 선택 --</option>
+                    {footerPresetGroups.map((g) => (
+                      <optgroup key={g.group} label={g.group}>
+                        {g.items.map((item) => (
+                          <option key={item.label} value={item.text}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
 
-            {/* 빠른 문구 추천 버튼 */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
-              {footerPresets.map((f) => (
-                <button
-                  key={f.text}
-                  type="button"
-                  onClick={() => setFooterText(f.text)}
-                  disabled={!showFooter}
-                  className={`p-1.5 rounded-lg border text-left transition-all ${
-                    footerText === f.text
-                      ? 'bg-emerald-600 text-white border-emerald-600 font-bold'
-                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-                  }`}
-                >
-                  <div className="text-[10px] opacity-80">{f.label}</div>
-                  <div className="text-xs font-bold truncate">{f.text}</div>
-                </button>
-              ))}
-            </div>
+                <div>
+                  <label className="block text-slate-600 font-bold text-[11px] mb-1">하단 인쇄 텍스트 (직접 수정 가능)</label>
+                  <input
+                    type="text"
+                    value={footerText}
+                    onChange={(e) => setFooterText(e.target.value)}
+                    placeholder="예: 固 城 李 氏 서 울 宗 親 會"
+                    className="w-full px-3 py-2 text-sm font-semibold border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 bg-white tracking-widest"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* 세부 옵션: 옵션 3 (없음) 선택 시 */}
+            {footerType === 'none' && (
+              <div className="p-3 bg-slate-100 rounded-lg border border-slate-200 text-[11px] text-slate-600">
+                명찰 하단 박스가 출력되지 않으며, 성명 영역이 넓고 시원하게 인쇄됩니다.
+              </div>
+            )}
           </div>
 
           {/* 3. 기본 용지 규격 & 디자인 모드 */}

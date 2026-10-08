@@ -46,7 +46,10 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBranch, setSelectedBranch] = useState<string>('전체');
-  const [onlyCheckedIn, setOnlyCheckedIn] = useState<boolean>(false);
+  const [attendanceTab, setAttendanceTab] = useState<'all' | 'checked_in' | 'not_checked_in'>('all');
+  const [onlyUnprinted, setOnlyUnprinted] = useState<boolean>(false);
+  const [onlyExecutives, setOnlyExecutives] = useState<boolean>(false);
+  const [generationFilter, setGenerationFilter] = useState<string>('all');
 
   // 역대 출석 이력 맵 (memberId -> AttendanceRecord[])
   const historyMap = useMemo(() => {
@@ -69,43 +72,94 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
     return map;
   }, [attendanceRecords]);
 
+  // 파별 인원수 맵
+  const branchCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    members.forEach((m) => {
+      const b = m.branch ? m.branch.trim() : '미지정';
+      counts[b] = (counts[b] || 0) + 1;
+    });
+    return counts;
+  }, [members]);
+
+  const dynamicBranchList = useMemo(() => {
+    return Object.keys(branchCounts).sort((a, b) => branchCounts[b] - branchCounts[a]);
+  }, [branchCounts]);
+
   // 검색 및 필터링
   const filteredMembers = useMemo(() => {
     const q = searchQuery.trim();
     return members.filter((m) => {
-      // 당일 접수자만 보기 필터
-      if (onlyCheckedIn && !checkedInMap.has(m.id)) {
+      const record = checkedInMap.get(m.id);
+
+      // 1. 출석 상태 탭 (전체 / 접수완료 / 미접수)
+      if (attendanceTab === 'checked_in' && !record) return false;
+      if (attendanceTab === 'not_checked_in' && record) return false;
+
+      // 2. 명찰 미출력자만 (접수했으나 printedCount가 0인 사람)
+      if (onlyUnprinted) {
+        if (!record || (record.printedCount || 0) > 0) return false;
+      }
+
+      // 3. 임원/직책자만
+      if (onlyExecutives) {
+        if (!m.role || !m.role.trim() || m.role === '-') return false;
+      }
+
+      // 4. 세수(항렬) 필터
+      const gen = Number(m.generation);
+      if (generationFilter === 'elder') {
+        if (!gen || gen > 29) return false;
+      } else if (generationFilter === 'mid') {
+        if (!gen || gen < 30 || gen > 32) return false;
+      } else if (generationFilter === 'youth') {
+        if (!gen || gen < 33) return false;
+      } else if (generationFilter !== 'all') {
+        if (String(m.generation) !== generationFilter) return false;
+      }
+
+      // 5. 파별 필터
+      if (selectedBranch !== '전체' && (m.branch || '').trim() !== selectedBranch) {
         return false;
       }
 
-      // 파별 필터
-      if (selectedBranch !== '전체' && m.branch !== selectedBranch) {
-        return false;
-      }
-
-      // 검색어 없는 경우 기본 상위 50명 노출
+      // 6. 검색어 매칭
       if (!q) return true;
-
-      // 1. 성명 한글/초성 매칭
       if (matchKorean(m.name, q)) return true;
-
-      // 2. 전화번호 매칭 (뒷 4자리 등)
       const cleanPhone = (m.mobile || m.phone || '').replace(/[^0-9]/g, '');
       const cleanQuery = q.replace(/[^0-9]/g, '');
       if (cleanQuery && cleanPhone.includes(cleanQuery)) return true;
-
-      // 3. 직책/직업 매칭
+      if (m.branch && m.branch.includes(q)) return true;
       if (m.job && m.job.includes(q)) return true;
       if (m.role && m.role.includes(q)) return true;
+      if (m.address && m.address.includes(q)) return true;
 
       return false;
     });
-  }, [members, searchQuery, selectedBranch, onlyCheckedIn, checkedInMap]);
+  }, [
+    members,
+    searchQuery,
+    selectedBranch,
+    attendanceTab,
+    onlyUnprinted,
+    onlyExecutives,
+    generationFilter,
+    checkedInMap,
+  ]);
 
-  // 화면 표시 개수 제한 (성능 최적화: 검색어 없으면 40개, 검색어 있으면 최대 100개)
+  const isFiltering = Boolean(
+    searchQuery ||
+    attendanceTab !== 'all' ||
+    onlyUnprinted ||
+    onlyExecutives ||
+    generationFilter !== 'all' ||
+    selectedBranch !== '전체'
+  );
+
+  // 화면 표시 개수 제한 (성능 최적화: 검색어/필터 있으면 150개, 없으면 기본 40개)
   const displayList = useMemo(() => {
-    return filteredMembers.slice(0, searchQuery || onlyCheckedIn ? 100 : 40);
-  }, [filteredMembers, searchQuery, onlyCheckedIn]);
+    return filteredMembers.slice(0, isFiltering ? 150 : 40);
+  }, [filteredMembers, isFiltering]);
 
   // 다중 선택 상태 (선택된 memberId Set)
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<number>>(new Set());
@@ -236,8 +290,8 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
           >
             전체 ({members.length})
           </button>
-          {BRANCHES.map((branch) => {
-            const count = members.filter((m) => m.branch === branch).length;
+          {dynamicBranchList.map((branch) => {
+            const count = branchCounts[branch] || 0;
             return (
               <button
                 key={branch}
@@ -301,7 +355,7 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
           </div>
         )}
 
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 font-semibold">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 font-semibold">
           <div className="flex items-center gap-3">
             {/* 전체 선택 체크박스 버튼 */}
             <button
@@ -326,28 +380,96 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
               검색 결과: <strong className="text-slate-900">{filteredMembers.length}</strong>명
               {filteredMembers.length > displayList.length && ` (상위 ${displayList.length}명 표시 중)`}
             </span>
-            {onlyCheckedIn && (
-              <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                접수 완료자만 필터링 중
-              </span>
-            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* 당일 접수자만 보기 원클릭 토글 버튼 */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 3단 출석 상태 토글 버튼 */}
+            <div className="bg-slate-200 p-0.5 rounded-xl flex items-center">
+              <button
+                type="button"
+                onClick={() => setAttendanceTab('all')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  attendanceTab === 'all'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                전체
+              </button>
+              <button
+                type="button"
+                onClick={() => setAttendanceTab('checked_in')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${
+                  attendanceTab === 'checked_in'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-emerald-700 hover:text-emerald-900'
+                }`}
+              >
+                <CheckCircle className="w-3 h-3" />
+                출석 ({attendanceRecords.length}명)
+              </button>
+              <button
+                type="button"
+                onClick={() => setAttendanceTab('not_checked_in')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  attendanceTab === 'not_checked_in'
+                    ? 'bg-slate-700 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                미출석 ({Math.max(0, members.length - attendanceRecords.length)}명)
+              </button>
+            </div>
+
+            {/* 명찰 미출력자만 토글 */}
             <button
               type="button"
-              onClick={() => setOnlyCheckedIn(!onlyCheckedIn)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                onlyCheckedIn
-                  ? 'bg-emerald-700 text-white shadow-sm ring-2 ring-emerald-300'
-                  : 'bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50'
+              onClick={() => setOnlyUnprinted(!onlyUnprinted)}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                onlyUnprinted
+                  ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400'
+                  : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'
               }`}
-              title="오늘 접수한 회원만 모아보기"
+              title="접수했으나 아직 명찰을 인쇄하지 않은 종친"
             >
-              <CheckCircle className="w-3.5 h-3.5" />
-              당일 접수자만 보기 ({attendanceRecords.length}명)
+              <Printer className="w-3 h-3" />
+              미인쇄자만
             </button>
+
+            {/* 임원진만 토글 */}
+            <button
+              type="button"
+              onClick={() => setOnlyExecutives(!onlyExecutives)}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                onlyExecutives
+                  ? 'bg-sky-700 text-white shadow-sm ring-1 ring-sky-500'
+                  : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'
+              }`}
+              title="직책이 기재된 임원 종친만 보기"
+            >
+              임원진만
+            </button>
+
+            {/* 세수 드롭다운 */}
+            <select
+              value={generationFilter}
+              onChange={(e) => setGenerationFilter(e.target.value)}
+              className="px-2 py-1 text-xs font-semibold border border-slate-300 rounded-xl bg-white text-slate-700"
+            >
+              <option value="all">전체 세수</option>
+              <option value="elder">원로 (27~29세)</option>
+              <option value="mid">중진 (30~32세)</option>
+              <option value="youth">청장년 (33세+)</option>
+              <option value="27">27세</option>
+              <option value="28">28세</option>
+              <option value="29">29세</option>
+              <option value="30">30세</option>
+              <option value="31">31세</option>
+              <option value="32">32세</option>
+              <option value="33">33세</option>
+              <option value="34">34세</option>
+              <option value="35">35세</option>
+            </select>
           </div>
         </div>
 
@@ -355,7 +477,7 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
           <div className="py-20 text-center text-slate-400 space-y-3">
             <Search className="w-10 h-10 mx-auto text-slate-300" />
             <p className="text-sm font-semibold">
-              {onlyCheckedIn ? '당일 접수된 회원이 없습니다.' : '검색 결과가 없습니다.'}
+              {attendanceTab === 'checked_in' ? '당일 접수된 회원이 없습니다.' : '검색 결과가 없습니다.'}
             </p>
             <p className="text-xs text-slate-400">
               주소록에 등록되지 않은 종친은 상단의 <strong>[+ 신규 종친 현장 등록]</strong> 버튼을 눌러 바로 접수해 주세요.

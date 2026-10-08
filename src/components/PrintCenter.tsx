@@ -238,13 +238,47 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
           <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-150">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                하단 문구 (기본: 固 城 李 氏 서 울 宗 親 會)
+                하단 문구 (종파 / 종중 / 행사명 선택)
               </label>
+              <select
+                onChange={(e) => {
+                  if (e.target.value) onUpdateSettings({ ...settings, footerText: e.target.value });
+                }}
+                value={settings.footerText}
+                className="w-full px-2 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white mb-1.5"
+              >
+                <option value="">-- 종파 / 종중 / 행사명 프리셋 선택 --</option>
+                <optgroup label="⭐ 행사명 및 대표 종중/종친회">
+                  <option value={settings.eventName}>[공식 행사명] {settings.eventName}</option>
+                  <option value="固 城 李 氏 容 軒 宗 中">용헌종중 (한자) - 固 城 李 氏 容 軒 宗 中</option>
+                  <option value="고 성 이 씨 용 헌 宗 中">용헌종중 (국한문) - 고 성 이 씨 용 헌 宗 中</option>
+                  <option value="固 城 李 氏 容 軒 公 派">용헌공파 (한자) - 固 城 李 氏 容 軒 公 派</option>
+                  <option value="고 성 이 씨 용 헌 공 파">용헌공파 (한글) - 고 성 이 씨 용 헌 공 파</option>
+                  <option value="固 城 李 氏 서 울 宗 親 會">서울종친회 (한자) - 固 城 李 氏 서 울 宗 親 會</option>
+                  <option value="고 성 이 씨 서 울 종 친 회">서울종친회 (한글) - 고 성 이 씨 서 울 종 친 회</option>
+                  <option value="固 城 李 氏 大 宗 會">대종회 (한자) - 固 城 李 氏 大 宗 會</option>
+                  <option value="廣 牟 齋 時 祭">광모재 시제 (한자) - 廣 牟 齋 時 祭</option>
+                  <option value="광 모 재 시 제">광모재 시제 (한글) - 광 모 재 시 제</option>
+                </optgroup>
+                <optgroup label="📜 주요 공파 (한자)">
+                  <option value="固 城 李 氏 參 判 公 派">참판공파 - 固 城 李 氏 參 判 公 派</option>
+                  <option value="固 城 李 氏 遁 齋 公 派">둔재공파 - 固 城 李 氏 遁 齋 公 派</option>
+                  <option value="固 城 李 氏 思 菴 公 派">사암공파 - 固 城 李 氏 思 菴 公 派</option>
+                  <option value="固 城 李 氏 湖 軍 公 派">호군공파 - 固 城 李 氏 湖 軍 公 派</option>
+                  <option value="固 城 李 氏 桃 村 公 派">도촌공파 - 固 城 李 氏 桃 村 公 派</option>
+                  <option value="固 城 李 氏 隱 庵 公 派">은암공파 - 固 城 李 氏 隱 庵 公 派</option>
+                  <option value="固 城 李 氏 左 尹 公 派">좌윤공파 - 固 城 李 氏 左 尹 公 派</option>
+                  <option value="固 城 李 氏 兵 使 公 派">병사공파 - 固 城 李 氏 兵 使 公 派</option>
+                  <option value="固 城 李 氏 安 靖 公 派">안정공파 - 固 城 李 氏 安 靖 公 派</option>
+                  <option value="固 城 李 氏 東 洲 公 派">동주공파 - 固 城 李 氏 東 洲 公 派</option>
+                </optgroup>
+              </select>
               <input
                 type="text"
                 value={settings.footerText}
                 onChange={(e) => onUpdateSettings({ ...settings, footerText: e.target.value })}
-                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg"
+                placeholder="직접 입력: 固 城 李 氏 서 울 宗 親 會"
+                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg tracking-wider"
               />
             </div>
 

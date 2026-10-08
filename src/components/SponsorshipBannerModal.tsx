@@ -56,6 +56,7 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
   );
   const [amountText, setAmountText] = useState(getSmartInitialAmount(initialAmount));
   const [bannerLengthMm, setBannerLengthMm] = useState<number>(650); // 600, 650, 700mm
+  const [layoutType, setLayoutType] = useState<'amount-first' | 'name-first'>('name-first'); // 기본 추천: 성명 우선형 (B타입)
   const [fontFamily, setFontFamily] = useState<'gungsuh' | 'myeongjo'>('gungsuh');
   const [zoomScale, setZoomScale] = useState<number>(0.55); // 전체가 한눈에 들어오는 기본 배율
 
@@ -242,7 +243,7 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
               margin-top: 2mm;
             }
 
-            /* 4. 성명: 남은 하단 공간 전체를 넉넉하게 띄어쓰기하여 꽉 채움 */
+            /* 4. 성명: 남은 공간을 넉넉하게 띄어쓰기하여 꽉 채움 */
             .name-section {
               flex: 1;
               width: 100%;
@@ -250,12 +251,12 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
               flex-direction: column;
               align-items: center;
               justify-content: space-evenly;
-              padding-top: 5mm;
-              padding-bottom: 5mm;
+              padding-top: 4mm;
+              padding-bottom: 4mm;
             }
             .name-char {
               width: 72mm;
-              font-size: 58mm;
+              font-size: 56mm;
               font-weight: 900;
               line-height: 1;
               text-align: center;
@@ -263,18 +264,78 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
               align-items: center;
               justify-content: center;
             }
+
+            /* B타입 전용: 좁게/밀착된 금액 섹션 */
+            .amount-section-compact {
+              width: 100%;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 1mm;
+              margin-top: 1mm;
+              margin-bottom: 2mm;
+            }
+            .amount-char-compact {
+              width: 72mm;
+              font-size: 34mm;
+              font-weight: 900;
+              line-height: 0.95;
+              text-align: center;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            /* B타입 전용: 하단 종문 로고 */
+            .bottom-logo-box {
+              width: 100%;
+              text-align: center;
+              margin-top: 1.5mm;
+            }
+            .bottom-logo-img {
+              width: 52mm;
+              max-width: 52mm;
+              height: auto;
+              display: block;
+              margin: 0 auto;
+            }
           </style>
         </head>
         <body>
-          <div class="top-group">
-            <!-- 1. 로고 -->
+          ${layoutType === 'amount-first' ? `
+            <div class="top-group">
+              <!-- 1. 상단 로고 -->
+              <div class="logo-box">
+                <img src="/logo-black.png" class="logo-img" alt="종문로고" />
+              </div>
+              
+              <!-- 2. 금액 (대형 밀착) -->
+              <div class="amount-section">
+                ${amountChars.map((c) => `<div class="amount-char">${c}</div>`).join('')}
+              </div>
+
+              <!-- 3. 문파 세수 2줄 -->
+              <div class="branch-gen-box">
+                <div class="branch-text">${cleanBranch}</div>
+                <div class="gen-text">${cleanGen}</div>
+              </div>
+            </div>
+
+            <!-- 4. 성명 (남은 하단 공간 균등 띄어쓰기) -->
+            <div class="name-section">
+              ${nameChars.map((c) => `<div class="name-char">${c}</div>`).join('')}
+            </div>
+          ` : `
+            <!-- B타입: 상단로고 ➔ 성명(넓게) ➔ 문파세수 ➔ 금액(좁게) ➔ 하단로고 -->
+            <!-- 1. 상단 대형 로고 -->
             <div class="logo-box">
               <img src="/logo-black.png" class="logo-img" alt="종문로고" />
             </div>
-            
-            <!-- 2. 금액 -->
-            <div class="amount-section">
-              ${amountChars.map((c) => `<div class="amount-char">${c}</div>`).join('')}
+
+            <!-- 2. 성명 (넓게 균등 띄어쓰기) -->
+            <div class="name-section">
+              ${nameChars.map((c) => `<div class="name-char">${c}</div>`).join('')}
             </div>
 
             <!-- 3. 문파 세수 2줄 -->
@@ -282,12 +343,17 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
               <div class="branch-text">${cleanBranch}</div>
               <div class="gen-text">${cleanGen}</div>
             </div>
-          </div>
 
-          <!-- 4. 성명 (남은 공간 균등 띄어쓰기) -->
-          <div class="name-section">
-            ${nameChars.map((c) => `<div class="name-char">${c}</div>`).join('')}
-          </div>
+            <!-- 4. 금액 (좁게/밀착) -->
+            <div class="amount-section-compact">
+              ${amountChars.map((c) => `<div class="amount-char-compact">${c}</div>`).join('')}
+            </div>
+
+            <!-- 5. 하단 종문 로고 추가 -->
+            <div class="bottom-logo-box">
+              <img src="/logo-black.png" class="bottom-logo-img" alt="종문로고" />
+            </div>
+          `}
         </body>
       </html>
     `;
@@ -340,6 +406,48 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
         <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden bg-slate-50">
           {/* 좌측: 입력 컨트롤러 (md: 5열) */}
           <div className="md:col-span-5 p-5 space-y-4 overflow-y-auto border-r border-slate-200 bg-white">
+            {/* 0. 리본 배치 순서 선택 탭 */}
+            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <label className="block text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
+                <span>📜 리본 출력 순서 선택</span>
+                <span className="text-[11px] text-amber-600 font-extrabold">원클릭 실시간 전환</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLayoutType('name-first')}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    layoutType === 'name-first'
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-md font-bold ring-2 ring-amber-400/40'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="text-xs font-black flex items-center justify-between">
+                    <span>이름 우선</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${layoutType === 'name-first' ? 'bg-white text-amber-700' : 'bg-amber-100 text-amber-800'}`}>추천</span>
+                  </div>
+                  <div className={`text-[10px] mt-1 ${layoutType === 'name-first' ? 'text-amber-100' : 'text-slate-400'}`}>
+                    로고 ➔ 이름 ➔ 문파 ➔ 금액 ➔ 로고
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLayoutType('amount-first')}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    layoutType === 'amount-first'
+                      ? 'bg-amber-600 text-white border-amber-600 shadow-md font-bold ring-2 ring-amber-400/40'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="text-xs font-black">금액 우선</div>
+                  <div className={`text-[10px] mt-1 ${layoutType === 'amount-first' ? 'text-amber-100' : 'text-slate-400'}`}>
+                    로고 ➔ 금액 ➔ 문파 ➔ 이름
+                  </div>
+                </button>
+              </div>
+            </div>
+
             {/* 1. 성명 입력 */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -517,7 +625,7 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
                 className="w-full py-4 bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white font-black text-base rounded-xl shadow-xl flex items-center justify-center gap-2.5 transition-all cursor-pointer border border-amber-500 disabled:opacity-50"
               >
                 <Printer className="w-5 h-5 text-white" />
-                <span>80mm 협찬금 리본 인쇄하기</span>
+                <span>80mm 리본 인쇄하기 ({layoutType === 'name-first' ? '이름우선' : '금액우선'})</span>
               </button>
               <p className="text-[11px] text-center text-slate-400 mt-1.5">
                 💡 2번 영수증 프린터(80mm 롤)를 선택해 인쇄하시면 자동 컷팅됩니다.
@@ -566,7 +674,12 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
             </div>
 
             <div className="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5 self-start pl-2">
-              <span>📜 실물 리본 전폭 꽉 채움 미리보기 (80mm × {bannerLengthMm}mm)</span>
+              <span>
+                📜 실물 리본 전폭 미리보기 (80mm × {bannerLengthMm}mm)
+                <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-md font-extrabold text-[11px]">
+                  {layoutType === 'name-first' ? '👤 이름 우선 모드 (추천)' : '💰 금액 우선 모드'}
+                </span>
+              </span>
             </div>
 
             {/* 스크롤 가능한 프리뷰 영역 */}
@@ -585,87 +698,184 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
                   fontFamily === 'gungsuh' ? 'font-chosun' : 'font-myeongjo'
                 }`}
               >
-                {/* 상단 밀착 그룹: 로고 + 금액 + 문파/세수 */}
-                <div className="w-full flex flex-col items-center">
-                  {/* 1. 상단 대형 종문 로고 */}
-                  <div className="w-full text-center mb-1">
-                    <img
-                      src="/logo-black.png"
-                      alt="종문로고"
-                      style={{ width: '66mm', maxWidth: '66mm' }}
-                      className="h-auto mx-auto object-contain block"
-                    />
-                  </div>
-
-                  {/* 2. 초대형 금액 세로쓰기 (로고와 가깝게 밀착) */}
-                  <div className="w-full flex flex-col items-center justify-center my-1 gap-[1.5mm]">
-                    {amountChars.map((ch, idx) => (
-                      <div
-                        key={`preview-amt-${idx}`}
-                        style={{
-                          width: '72mm',
-                          fontSize: '48mm',
-                          lineHeight: 0.95,
-                          height: '46mm',
-                        }}
-                        className="font-black text-center flex items-center justify-center tracking-tighter"
-                      >
-                        {ch}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* 3. 문파 & 세수 2줄 대형 괘선 블록 (금액과 가깝게 밀착) */}
-                  <div
-                    style={{
-                      width: '72mm',
-                      borderTop: '3px solid black',
-                      borderBottom: '3px solid black',
-                      padding: '3.5mm 0 4mm 0',
-                      marginTop: '2mm',
-                    }}
-                    className="text-center"
-                  >
-                    <div
-                      style={{
-                        fontSize: '13mm',
-                        lineHeight: 1.15,
-                        letterSpacing: '3mm',
-                      }}
-                      className="font-black text-center tracking-widest"
-                    >
-                      {cleanBranch}
+                {layoutType === 'name-first' ? (
+                  <>
+                    {/* B타입: 이름 우선 모드 (로고 ➔ 이름 ➔ 문파세수 ➔ 금액 ➔ 하단로고) */}
+                    {/* 1. 상단 대형 종문 로고 */}
+                    <div className="w-full text-center mb-1">
+                      <img
+                        src="/logo-black.png"
+                        alt="종문로고"
+                        style={{ width: '66mm', maxWidth: '66mm' }}
+                        className="h-auto mx-auto object-contain block"
+                      />
                     </div>
-                    <div
-                      style={{
-                        fontSize: '15mm',
-                        lineHeight: 1.15,
-                        letterSpacing: '2mm',
-                        marginTop: '2mm',
-                      }}
-                      className="font-black text-center"
-                    >
-                      {cleanGen}
-                    </div>
-                  </div>
-                </div>
 
-                {/* 4. 성명: 남은 하단 공간 전체를 넉넉하게 띄어쓰기하여 꽉 채움 */}
-                <div className="w-full flex-1 flex flex-col items-center justify-evenly py-4">
-                  {nameChars.map((ch, idx) => (
+                    {/* 2. 성명 (넓게 균등 띄어쓰기 flex-1) */}
+                    <div className="w-full flex-1 flex flex-col items-center justify-evenly py-4">
+                      {nameChars.map((ch, idx) => (
+                        <div
+                          key={`preview-b-name-${idx}`}
+                          style={{
+                            width: '72mm',
+                            fontSize: '56mm',
+                            lineHeight: 1,
+                          }}
+                          className="font-black text-center flex items-center justify-center tracking-tighter"
+                        >
+                          {ch}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 3. 문파 & 세수 2줄 대형 괘선 블록 */}
                     <div
-                      key={`preview-name-${idx}`}
                       style={{
                         width: '72mm',
-                        fontSize: '58mm',
-                        lineHeight: 1,
+                        borderTop: '3px solid black',
+                        borderBottom: '3px solid black',
+                        padding: '3.5mm 0 4mm 0',
+                        marginBottom: '2mm',
                       }}
-                      className="font-black text-center flex items-center justify-center tracking-tighter"
+                      className="text-center"
                     >
-                      {ch}
+                      <div
+                        style={{
+                          fontSize: '13mm',
+                          lineHeight: 1.15,
+                          letterSpacing: '3mm',
+                        }}
+                        className="font-black text-center tracking-widest"
+                      >
+                        {cleanBranch}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '15mm',
+                          lineHeight: 1.15,
+                          letterSpacing: '2mm',
+                          marginTop: '2mm',
+                        }}
+                        className="font-black text-center"
+                      >
+                        {cleanGen}
+                      </div>
                     </div>
-                  ))}
-                </div>
+
+                    {/* 4. 금액 (좁게/밀착) */}
+                    <div className="w-full flex flex-col items-center justify-center my-1 gap-[1mm]">
+                      {amountChars.map((ch, idx) => (
+                        <div
+                          key={`preview-b-amt-${idx}`}
+                          style={{
+                            width: '72mm',
+                            fontSize: '34mm',
+                            lineHeight: 0.95,
+                            height: '32mm',
+                          }}
+                          className="font-black text-center flex items-center justify-center tracking-tighter"
+                        >
+                          {ch}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 5. 하단 종문 로고 추가 */}
+                    <div className="w-full text-center mt-1">
+                      <img
+                        src="/logo-black.png"
+                        alt="종문로고"
+                        style={{ width: '52mm', maxWidth: '52mm' }}
+                        className="h-auto mx-auto object-contain block"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* A타입: 금액 우선 모드 */}
+                    {/* 상단 밀착 그룹: 로고 + 금액 + 문파/세수 */}
+                    <div className="w-full flex flex-col items-center">
+                      {/* 1. 상단 대형 종문 로고 */}
+                      <div className="w-full text-center mb-1">
+                        <img
+                          src="/logo-black.png"
+                          alt="종문로고"
+                          style={{ width: '66mm', maxWidth: '66mm' }}
+                          className="h-auto mx-auto object-contain block"
+                        />
+                      </div>
+
+                      {/* 2. 초대형 금액 세로쓰기 (로고와 가깝게 밀착) */}
+                      <div className="w-full flex flex-col items-center justify-center my-1 gap-[1.5mm]">
+                        {amountChars.map((ch, idx) => (
+                          <div
+                            key={`preview-amt-${idx}`}
+                            style={{
+                              width: '72mm',
+                              fontSize: '48mm',
+                              lineHeight: 0.95,
+                              height: '46mm',
+                            }}
+                            className="font-black text-center flex items-center justify-center tracking-tighter"
+                          >
+                            {ch}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* 3. 문파 & 세수 2줄 대형 괘선 블록 (금액과 가깝게 밀착) */}
+                      <div
+                        style={{
+                          width: '72mm',
+                          borderTop: '3px solid black',
+                          borderBottom: '3px solid black',
+                          padding: '3.5mm 0 4mm 0',
+                          marginTop: '2mm',
+                        }}
+                        className="text-center"
+                      >
+                        <div
+                          style={{
+                            fontSize: '13mm',
+                            lineHeight: 1.15,
+                            letterSpacing: '3mm',
+                          }}
+                          className="font-black text-center tracking-widest"
+                        >
+                          {cleanBranch}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '15mm',
+                            lineHeight: 1.15,
+                            letterSpacing: '2mm',
+                            marginTop: '2mm',
+                          }}
+                          className="font-black text-center"
+                        >
+                          {cleanGen}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. 성명: 남은 하단 공간 전체를 넉넉하게 띄어쓰기하여 꽉 채움 */}
+                    <div className="w-full flex-1 flex flex-col items-center justify-evenly py-4">
+                      {nameChars.map((ch, idx) => (
+                        <div
+                          key={`preview-name-${idx}`}
+                          style={{
+                            width: '72mm',
+                            fontSize: '58mm',
+                            lineHeight: 1,
+                          }}
+                          className="font-black text-center flex items-center justify-center tracking-tighter"
+                        >
+                          {ch}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -678,7 +888,7 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
               <Printer className="w-4 h-4" />
             </span>
             <span>
-              출력 규격: <strong className="text-white font-bold">80mm × {bannerLengthMm}mm</strong> (2번 영수증 프린터 자동 컷팅)
+              출력 규격: <strong className="text-white font-bold">80mm × {bannerLengthMm}mm</strong> ({layoutType === 'name-first' ? '이름 우선 모드' : '금액 우선 모드'}) | 2번 영수증 프린터
             </span>
           </div>
           <div className="flex items-center gap-3">

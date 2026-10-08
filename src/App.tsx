@@ -199,8 +199,13 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (singlePrintItem) {
       const timer = setTimeout(() => {
+        const cleanup = () => {
+          setSinglePrintItem(null);
+          window.removeEventListener('afterprint', cleanup);
+        };
+        window.addEventListener('afterprint', cleanup);
         window.print();
-        setSinglePrintItem(null);
+        setTimeout(cleanup, 3000);
       }, 100);
       return () => clearTimeout(timer);
     }
@@ -210,8 +215,13 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (batchPrintItems && batchPrintItems.length > 0) {
       const timer = setTimeout(() => {
+        const cleanup = () => {
+          setBatchPrintItems(null);
+          window.removeEventListener('afterprint', cleanup);
+        };
+        window.addEventListener('afterprint', cleanup);
         window.print();
-        setBatchPrintItems(null);
+        setTimeout(cleanup, 3000);
       }, 150);
       return () => clearTimeout(timer);
     }
@@ -517,6 +527,7 @@ export const App: React.FC = () => {
             onRemoveFromQueue={handleRemoveFromQueue}
             onClearQueue={handleClearQueue}
             onMarkPrinted={handleMarkPrinted}
+            onBatchPrint={handleBatchPrint}
           />
         )}
 

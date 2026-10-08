@@ -13,6 +13,7 @@ interface PrintCenterProps {
   onRemoveFromQueue: (id: string) => void;
   onClearQueue: () => void;
   onMarkPrinted: (ids: string[]) => void;
+  onBatchPrint?: (items: AttendanceRecord[]) => void;
 }
 
 export const PrintCenter: React.FC<PrintCenterProps> = ({
@@ -23,6 +24,7 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
   onRemoveFromQueue,
   onClearQueue,
   onMarkPrinted,
+  onBatchPrint,
 }) => {
   const [sourceType, setSourceType] = useState<'queue' | 'allRecords'>(
     queue.length > 0 ? 'queue' : 'allRecords'
@@ -64,11 +66,15 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
       return;
     }
 
-    // 인쇄 실행
-    window.print();
-
-    // 인쇄 완료 처리
+    // 인쇄 완료 카운트 처리
     onMarkPrinted(selectedIds);
+
+    // 상위 App의 루트 인쇄 컨테이너로 전달하여 즉시 인쇄 실행
+    if (onBatchPrint) {
+      onBatchPrint(printItems);
+    } else {
+      window.print();
+    }
   };
 
   return (
@@ -421,15 +427,6 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
               );
             })}
           </div>
-        )}
-      </div>
-
-      {/* 숨겨진 전용 인쇄 영역 (화면에는 안 보이고, window.print() 실행 시에만 출력됨) */}
-      <div className="hidden print:block print:w-full">
-        {settings.paperSize === 'formtec_3114' ? (
-          <PrintSheetFormtec items={printItems} settings={settings} />
-        ) : (
-          <PrintSingleLabel items={printItems} settings={settings} />
         )}
       </div>
     </div>

@@ -516,9 +516,9 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
                 type="button"
                 onClick={handlePrint}
                 disabled={!name.trim()}
-                className="w-full py-3.5 bg-linear-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-black text-base rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full py-4 bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white font-black text-base rounded-xl shadow-xl flex items-center justify-center gap-2.5 transition-all cursor-pointer border border-amber-500 disabled:opacity-50"
               >
-                <Printer className="w-5 h-5" />
+                <Printer className="w-5 h-5 text-white" />
                 <span>80mm 협찬금 리본 인쇄하기</span>
               </button>
               <p className="text-[11px] text-center text-slate-400 mt-1.5">
@@ -670,6 +670,36 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* 모달 하단 고정 푸터 바 (어디서든 한눈에 보이는 인쇄 버튼) */}
+        <div className="px-6 py-3.5 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
+          <div className="text-xs text-slate-300 flex items-center gap-2">
+            <span className="p-1.5 bg-amber-500/20 text-amber-400 rounded-lg">
+              <Printer className="w-4 h-4" />
+            </span>
+            <span>
+              출력 규격: <strong className="text-white font-bold">80mm × {bannerLengthMm}mm</strong> (2번 영수증 프린터 자동 컷팅)
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
+            >
+              닫기
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={!name.trim()}
+              className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-sm rounded-xl shadow-lg flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Printer className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+              <span>80mm 리본 바로 인쇄하기</span>
+            </button>
           </div>
         </div>
       </div>

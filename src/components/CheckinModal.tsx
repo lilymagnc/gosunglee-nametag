@@ -22,6 +22,7 @@ import {
   Layers,
   ChevronRight,
   Crown,
+  Sparkles,
 } from 'lucide-react';
 
 interface CheckinModalProps {
@@ -547,6 +548,12 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
                   className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 font-semibold"
                 />
               </div>
+              {feeAmount >= 100000 && (
+                <div className="mt-2 p-2 bg-amber-50 border border-amber-300 rounded-lg flex items-center gap-1.5 text-xs text-amber-900 font-bold animate-in fade-in">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>10만원 이상 납부: 접수 완료 후 2번 프린터로 [📜 80mm 협찬금 리본] 출력이 가능합니다.</span>
+                </div>
+              )}
             </div>
 
             {/* 납부 방식 */}

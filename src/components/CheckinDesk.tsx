@@ -20,7 +20,9 @@ import {
   ListPlus,
   X,
   Crown,
+  Sparkles,
 } from 'lucide-react';
+import { SponsorshipBannerModal } from './SponsorshipBannerModal';
 
 interface CheckinDeskProps {
   members: Member[];
@@ -51,6 +53,13 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
   const [onlyUnprinted, setOnlyUnprinted] = useState<boolean>(false);
   const [onlyExecutives, setOnlyExecutives] = useState<boolean>(false);
   const [generationFilter, setGenerationFilter] = useState<string>('all');
+  const [sponsorshipModalOpen, setSponsorshipModalOpen] = useState<boolean>(false);
+  const [selectedSponsor, setSelectedSponsor] = useState<{
+    name: string;
+    branch: string;
+    generation: string | number;
+    amount: number;
+  } | null>(null);
 
   // 역대 출석 이력 맵 (memberId -> AttendanceRecord[])
   const historyMap = useMemo(() => {
@@ -245,10 +254,24 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
             </p>
           </div>
 
+          {/* 80mm 협찬금 리본 출력 버튼 */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedSponsor(null);
+              setSponsorshipModalOpen(true);
+            }}
+            className="px-4 py-2.5 text-sm font-extrabold text-amber-950 bg-linear-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 active:scale-95 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer border border-amber-300"
+            title="80mm 영수증 감열지 연속 롤 전용 세로쓰기 협찬금 리본 출력 (2번 프린터)"
+          >
+            <Sparkles className="w-4 h-4 text-amber-900" />
+            📜 80mm 협찬금 리본 출력
+          </button>
+
           {/* 신규 종친 등록 버튼 */}
           <button
             onClick={onOpenNewMember}
-            className="px-5 py-2.5 text-sm font-extrabold text-white bg-emerald-700 hover:bg-emerald-800 active:scale-95 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all whitespace-nowrap"
+            className="px-5 py-2.5 text-sm font-extrabold text-white bg-emerald-700 hover:bg-emerald-800 active:scale-95 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all whitespace-nowrap cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             + 신규 종친 현장 등록
@@ -601,6 +624,27 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
 
                     {checkedIn ? (
                       <div className="flex items-center gap-2">
+                        {/* 10만원 이상 고액 협찬자 전용 80mm 리본 출력 버튼 */}
+                        {checkedIn.feeAmount >= 100000 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSponsor({
+                                name: checkedIn.name,
+                                branch: checkedIn.branch,
+                                generation: checkedIn.generation,
+                                amount: checkedIn.feeAmount,
+                              });
+                              setSponsorshipModalOpen(true);
+                            }}
+                            className="px-3 py-2 text-xs font-black text-amber-950 bg-amber-300 hover:bg-amber-400 active:scale-95 border-2 border-amber-400 rounded-xl shadow-xs flex items-center gap-1 transition-all cursor-pointer"
+                            title="80mm 영수증 프린터로 협찬금 세로 리본 출력 (2번 프린터)"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-800" />
+                            <span>📜 협찬 리본</span>
+                          </button>
+                        )}
+
                         {/* 클릭 가능한 접수완료 & 회비 수정 버튼 */}
                         <button
                           type="button"
@@ -682,6 +726,19 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
           </button>
         </div>
       )}
+
+      {/* 80mm 세로형 협찬금 리본 출력 모달 (2번 영수증 프린터 전용) */}
+      <SponsorshipBannerModal
+        isOpen={sponsorshipModalOpen}
+        onClose={() => {
+          setSponsorshipModalOpen(false);
+          setSelectedSponsor(null);
+        }}
+        initialName={selectedSponsor?.name || ''}
+        initialBranch={selectedSponsor?.branch || ''}
+        initialGeneration={selectedSponsor?.generation || ''}
+        initialAmount={selectedSponsor?.amount || 100000}
+      />
     </div>
   );
 };

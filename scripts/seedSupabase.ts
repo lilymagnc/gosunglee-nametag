@@ -2,8 +2,15 @@ import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ubroyskoxaixstgaralk.supabase.co';
-const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE || '';
+const envPath = path.resolve('.env');
+const envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf-8') : '';
+const getEnvVal = (key: string) => {
+  const match = envContent.match(new RegExp(`^${key}=(.*)$`, 'm'));
+  return match ? match[1].trim() : '';
+};
+
+const SUPABASE_URL = getEnvVal('VITE_SUPABASE_URL') || 'https://tabpszknhdylpxnugxkk.supabase.co';
+const SUPABASE_SERVICE_ROLE = getEnvVal('service_role') || process.env.SUPABASE_SERVICE_ROLE || '';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
 

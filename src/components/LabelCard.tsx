@@ -27,22 +27,54 @@ export const LabelCard: React.FC<LabelCardProps> = ({
       ? '"Nanum Myeongjo", "Gowun Batang", "Batang", serif'
       : '"Gungsuh", "Batang", "Gowun Batang", serif';
 
-  // 직책 줄바꿈 포맷팅 (실물 샘플 사진 100% 동일)
+  // 직책 줄바꿈 포맷팅 (실물 샘플 사진 100% 동일 & 단어 절단 원천 방지)
   const formatRole = (r: string) => {
     if (!r) return '';
-    if (r.includes('\n')) return r;
-    if (r.length === 4) {
-      return `${r.slice(0, 2)}\n${r.slice(2)}`;
+    const trimmed = r.trim();
+    if (trimmed.includes('\n')) return trimmed;
+
+    // 공백이 있는 경우 (예: "호군공파 회장" -> "호군공파\n회장")
+    if (trimmed.includes(' ')) {
+      return trimmed.split(/\s+/).join('\n');
     }
-    if (r.length === 5) {
-      if (r === '대종회회장') return '대종회\n회장';
-      return `${r.slice(0, 2)}\n${r.slice(2)}`;
+
+    // 2자 또는 3자: 1줄 그대로 표기 ("회장", "고문", "종원", "감사", "파회장")
+    if (trimmed.length <= 3) {
+      return trimmed;
     }
-    if (r.length > 5) {
-      if (r === '전자족보운영위원') return '전자족\n보운영\n위원';
-      return `${r.slice(0, 3)}\n${r.slice(3)}`;
+
+    // 4자: 2자씩 2줄 ("재무\n이사", "사무\n총장", "신임\n회장", "청년\n회장")
+    if (trimmed.length === 4) {
+      return `${trimmed.slice(0, 2)}\n${trimmed.slice(2)}`;
     }
-    return r;
+
+    // 5자: 의미 단위 2/3 또는 3/2 분리
+    if (trimmed.length === 5) {
+      if (trimmed === '대종회회장') return '대종회\n회장';
+      if (trimmed === '여성부회장') return '여성\n부회장';
+      if (trimmed === '수석부회장') return '수석\n부회장';
+      if (trimmed.endsWith('회장') || trimmed.endsWith('국장') || trimmed.endsWith('위원')) {
+        return `${trimmed.slice(0, trimmed.length - 2)}\n${trimmed.slice(trimmed.length - 2)}`;
+      }
+      return `${trimmed.slice(0, 2)}\n${trimmed.slice(2)}`;
+    }
+
+    // 6자: "호군공파회장" 등 3/3으로 쪼개면 "파"가 찢어지므로, 2자씩 3줄(2/2/2)로 단정하게 배치!
+    // ("호군\n공파\n회장") -> 가로 폭도 2자만 차지하여 이름이 오른쪽으로 밀리지 않음!
+    if (trimmed.length === 6) {
+      return `${trimmed.slice(0, 2)}\n${trimmed.slice(2, 4)}\n${trimmed.slice(4)}`;
+    }
+
+    // 7자 이상:
+    if (trimmed.length > 6) {
+      if (trimmed === '전자족보운영위원') return '전자족\n보운영\n위원';
+      if (trimmed.length === 8) {
+        return `${trimmed.slice(0, 3)}\n${trimmed.slice(3, 6)}\n${trimmed.slice(6)}`;
+      }
+      return `${trimmed.slice(0, 3)}\n${trimmed.slice(3)}`;
+    }
+
+    return trimmed;
   };
 
   const formattedRole = formatRole(role);
@@ -117,9 +149,32 @@ export const LabelCard: React.FC<LabelCardProps> = ({
       ? '0.04em'
       : '0.01em';
 
-  // 직책 영역 너비 (전체 폭의 약 18~20%)
-  const printRoleWidth = is80x60 ? '18mm' : '19.5mm';
-  const previewRoleWidth = is80x60 ? '54px' : '62px';
+  // 직책 줄 수 및 최대 글자폭 계산
+  const roleLines = formattedRole ? formattedRole.split('\n') : [];
+  const roleLineCount = roleLines.length;
+  const roleMaxLineLen = roleLines.length > 0 ? Math.max(...roleLines.map((l) => l.length)) : 0;
+
+  // 직책 영역 너비 (2글자 폭일 때는 폭을 슬림하게 줄여 이름 중앙 정렬 공간 극대화!)
+  const printRoleWidth =
+    roleMaxLineLen > 2
+      ? is80x60 ? '18.5mm' : '20.5mm'
+      : is80x60 ? '15.5mm' : '17mm';
+
+  const previewRoleWidth =
+    roleMaxLineLen > 2
+      ? is80x60 ? '56px' : '64px'
+      : is80x60 ? '46px' : '52px';
+
+  // 직책 폰트 크기 및 행간
+  const printRoleFontSize =
+    roleLineCount >= 3 ? '11.5pt' : roleLineCount === 2 ? '15pt' : '16pt';
+  const printRoleLineHeight =
+    roleLineCount >= 3 ? '1.08' : '1.15';
+
+  const previewRoleFontSize =
+    roleLineCount >= 3 ? '12.5px' : roleLineCount === 2 ? '16px' : '17.5px';
+  const previewRoleLineHeight =
+    roleLineCount >= 3 ? '1.10' : '1.18';
 
   // =========================================================================
   // 1. 인쇄 모드 (isPrint === true) - 정확한 mm 단위 레이아웃
@@ -188,8 +243,8 @@ export const LabelCard: React.FC<LabelCardProps> = ({
               <div
                 className="font-black text-black whitespace-pre-line tracking-tight pl-0.5"
                 style={{
-                  fontSize: formattedRole.split('\n').length >= 3 ? '12pt' : '15.5pt',
-                  lineHeight: '1.15',
+                  fontSize: printRoleFontSize,
+                  lineHeight: printRoleLineHeight,
                   fontFamily: '"Malgun Gothic", sans-serif',
                 }}
               >
@@ -317,8 +372,8 @@ export const LabelCard: React.FC<LabelCardProps> = ({
             <div
               className="font-black text-black whitespace-pre-line tracking-tight pl-0.5"
               style={{
-                fontSize: formattedRole.split('\n').length >= 3 ? '13px' : '17px',
-                lineHeight: '1.2',
+                fontSize: previewRoleFontSize,
+                lineHeight: previewRoleLineHeight,
                 fontFamily: '"Malgun Gothic", sans-serif',
               }}
             >

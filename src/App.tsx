@@ -82,32 +82,91 @@ export const App: React.FC = () => {
       setIsCloudSynced(true);
     });
 
-    // 2. 다른 컴퓨터(클라이언트)와의 실시간 Realtime 동기화 채널
+    // 2. 다른 컴퓨터(클라이언트)와의 실시간 Realtime 동기화 채널 (이벤트 페이로드 단위 초절전 동기화)
     const channel = supabase
       .channel('gosunglee_realtime_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gosunglee_attendance' }, () => {
-        loadAttendanceFromSupabase().then((res) => {
-          if (res) {
-            setAttendance(res);
-            saveAttendance(res);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gosunglee_attendance' }, (payload: any) => {
+        if (payload.eventType === 'INSERT') {
+          const row = payload.new;
+          const rec: AttendanceRecord = {
+            id: row.id,
+            memberId: Number(row.member_id),
+            name: row.name,
+            branch: row.branch,
+            generation: row.generation,
+            role: row.role || '',
+            job: row.job || '',
+            feeAmount: Number(row.fee_amount || 0),
+            paymentMethod: row.payment_method || '현금',
+            notes: row.notes || '',
+            timestamp: row.timestamp,
+            year: Number(row.year),
+            eventName: row.event_name,
+            isNewMember: Boolean(row.is_new_member),
+            printedCount: Number(row.printed_count || 0),
+            printSlot: Number(row.print_slot || 1),
+          };
+          setAttendance((prev) => [rec, ...prev.filter((r) => r.id !== rec.id)]);
+        } else if (payload.eventType === 'UPDATE') {
+          const row = payload.new;
+          setAttendance((prev) =>
+            prev.map((r) =>
+              r.id === row.id
+                ? {
+                    ...r,
+                    name: row.name,
+                    branch: row.branch,
+                    generation: row.generation,
+                    role: row.role || '',
+                    job: row.job || '',
+                    feeAmount: Number(row.fee_amount || 0),
+                    paymentMethod: row.payment_method || '현금',
+                    notes: row.notes || '',
+                    timestamp: row.timestamp,
+                    year: Number(row.year),
+                    eventName: row.event_name,
+                    printedCount: Number(row.printed_count || 0),
+                    printSlot: Number(row.print_slot || 1),
+                  }
+                : r
+            )
+          );
+        } else if (payload.eventType === 'DELETE') {
+          const oldId = payload.old?.id;
+          if (oldId) {
+            setAttendance((prev) => prev.filter((r) => r.id !== oldId));
           }
-        });
+        }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gosunglee_members' }, () => {
-        loadMembersFromSupabase().then((res) => {
-          if (res && res.length > 0) {
-            setMembers(res);
-            saveMembers(res);
-          }
-        });
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gosunglee_members' }, (payload: any) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          const row = payload.new;
+          const mem: Member = {
+            id: Number(row.id),
+            branch: row.branch || '',
+            generation: row.generation ?? '',
+            name: row.name,
+            address: row.address || '',
+            phone: row.phone || '',
+            mobile: row.mobile || '',
+            notes: row.notes || '',
+            role: row.role || '',
+            job: row.job || '',
+          };
+          setMembers((prev) => {
+            const exists = prev.some((m) => m.id === mem.id);
+            if (exists) {
+              return prev.map((m) => (m.id === mem.id ? mem : m));
+            }
+            return [mem, ...prev];
+          });
+        }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gosunglee_settings' }, () => {
-        loadSettingsFromSupabase().then((res) => {
-          if (res) {
-            setSettings(res);
-            saveSettings(res);
-          }
-        });
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gosunglee_settings' }, (payload: any) => {
+        if (payload.new && payload.new.settings) {
+          setSettings((prev) => ({ ...prev, ...payload.new.settings }));
+          saveSettings({ ...settings, ...payload.new.settings });
+        }
       })
       .subscribe();
 
@@ -128,7 +187,6 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     saveSettings(settings);
-    saveSettingsToSupabase(settings);
   }, [settings]);
 
   useEffect(() => {

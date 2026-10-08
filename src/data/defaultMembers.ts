@@ -30,6 +30,7 @@ export const BRANCH_HANJA_MAP: Record<string, string> = {
 export const ROLE_PRESETS = [
   '',
   '회장',
+  '파회장',
   '신임회장',
   '대종회회장',
   '고문',

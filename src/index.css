@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+}
+
+/* 한국 전통 궁서체 및 명조체 서체 클래스 */
+.font-gungsuh {
+  font-family: "Gungsuh", "Batang", "Gowun Batang", "Nanum Myeongjo", serif;
+}
+
+.font-myeongjo {
+  font-family: "Gowun Batang", "Nanum Myeongjo", "Batang", serif;
+}
+
+/* 브라우저 화면에서의 라벨 카드 스타일 */
+.label-card {
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+  color-adjust: exact !important;
+}
+
+/* ============================================================
+   인쇄 최적화 (Print CSS)
+   ============================================================ */
+@media print {
+  /* 인쇄 시 화면의 모든 일반 UI는 숨김 */
+  body {
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 네비게이션, 모달, 버튼 등 인쇄 제외 */
+  .no-print, header, nav, footer, .dashboard-container, .checkin-container {
+    display: none !important;
+  }
+
+  /* 인쇄 컨테이너만 활성화 */
+  .print-sheets-container,
+  .single-labels-print-container {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .formtec-page {
+    box-sizing: border-box;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .formtec-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .single-label-page {
+    box-sizing: border-box;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .single-label-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  /* 색상 보존 강제 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}

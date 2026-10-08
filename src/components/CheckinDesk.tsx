@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Member, AttendanceRecord, LabelSettings } from '../types';
 import { BRANCHES } from '../data/defaultMembers';
 import { matchKorean } from '../utils/hangul';
@@ -48,11 +48,42 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
   onEditMember,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBranch, setSelectedBranch] = useState<string>('전체');
-  const [attendanceTab, setAttendanceTab] = useState<'all' | 'checked_in' | 'not_checked_in'>('all');
-  const [onlyUnprinted, setOnlyUnprinted] = useState<boolean>(false);
-  const [onlyExecutives, setOnlyExecutives] = useState<boolean>(false);
-  const [generationFilter, setGenerationFilter] = useState<string>('all');
+  const [selectedBranch, setSelectedBranch] = useState<string>(() => {
+    return localStorage.getItem('gosung_desk_branch') || '전체';
+  });
+  const [attendanceTab, setAttendanceTab] = useState<'all' | 'checked_in' | 'not_checked_in'>(() => {
+    return (localStorage.getItem('gosung_desk_tab') as any) || 'all';
+  });
+  const [onlyUnprinted, setOnlyUnprinted] = useState<boolean>(() => {
+    return localStorage.getItem('gosung_desk_unprinted') === 'true';
+  });
+  const [onlyExecutives, setOnlyExecutives] = useState<boolean>(() => {
+    return localStorage.getItem('gosung_desk_executives') === 'true';
+  });
+  const [generationFilter, setGenerationFilter] = useState<string>(() => {
+    return localStorage.getItem('gosung_desk_generation') || 'all';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('gosung_desk_branch', selectedBranch);
+  }, [selectedBranch]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_desk_tab', attendanceTab);
+  }, [attendanceTab]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_desk_unprinted', String(onlyUnprinted));
+  }, [onlyUnprinted]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_desk_executives', String(onlyExecutives));
+  }, [onlyExecutives]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_desk_generation', generationFilter);
+  }, [generationFilter]);
+
   const [sponsorshipModalOpen, setSponsorshipModalOpen] = useState<boolean>(false);
   const [selectedSponsor, setSelectedSponsor] = useState<{
     name: string;

@@ -26,9 +26,16 @@ export const PrintCenter: React.FC<PrintCenterProps> = ({
   onMarkPrinted,
   onBatchPrint,
 }) => {
-  const [sourceType, setSourceType] = useState<'queue' | 'allRecords'>(
-    queue.length > 0 ? 'queue' : 'allRecords'
-  );
+  const [sourceType, setSourceType] = useState<'queue' | 'allRecords'>(() => {
+    const saved = localStorage.getItem('gosung_print_source');
+    if (saved === 'queue' || saved === 'allRecords') return saved;
+    return queue.length > 0 ? 'queue' : 'allRecords';
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('gosung_print_source', sourceType);
+  }, [sourceType]);
+
   const activeList = sourceType === 'queue' ? queue : allRecords;
 
   const [selectedIds, setSelectedIds] = useState<string[]>(activeList.map(q => q.id));

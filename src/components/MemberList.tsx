@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Member, AttendanceRecord, LabelSettings } from '../types';
 import { parseExcelToMembers } from '../utils/excel';
 import { matchKorean } from '../utils/hangul';
@@ -45,12 +45,48 @@ export const MemberList: React.FC<MemberListProps> = ({
 }) => {
   // 필터 상태들
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBranch, setSelectedBranch] = useState<string>('전체');
-  const [attendanceStatus, setAttendanceStatus] = useState<'all' | 'attended' | 'not_attended'>('all');
-  const [printStatus, setPrintStatus] = useState<'all' | 'not_printed' | 'printed'>('all');
-  const [generationFilter, setGenerationFilter] = useState<string>('all');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'executives' | 'regular'>('all');
-  const [regionFilter, setRegionFilter] = useState<'all' | 'seoul' | 'gyeonggi' | 'other' | 'none'>('all');
+  const [selectedBranch, setSelectedBranch] = useState<string>(() => {
+    return localStorage.getItem('gosung_member_branch') || '전체';
+  });
+  const [attendanceStatus, setAttendanceStatus] = useState<'all' | 'attended' | 'not_attended'>(() => {
+    return (localStorage.getItem('gosung_member_attendance') as any) || 'all';
+  });
+  const [printStatus, setPrintStatus] = useState<'all' | 'not_printed' | 'printed'>(() => {
+    return (localStorage.getItem('gosung_member_print') as any) || 'all';
+  });
+  const [generationFilter, setGenerationFilter] = useState<string>(() => {
+    return localStorage.getItem('gosung_member_generation') || 'all';
+  });
+  const [roleFilter, setRoleFilter] = useState<'all' | 'executives' | 'regular'>(() => {
+    return (localStorage.getItem('gosung_member_role') as any) || 'all';
+  });
+  const [regionFilter, setRegionFilter] = useState<'all' | 'seoul' | 'gyeonggi' | 'other' | 'none'>(() => {
+    return (localStorage.getItem('gosung_member_region') as any) || 'all';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('gosung_member_branch', selectedBranch);
+  }, [selectedBranch]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_member_attendance', attendanceStatus);
+  }, [attendanceStatus]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_member_print', printStatus);
+  }, [printStatus]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_member_generation', generationFilter);
+  }, [generationFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_member_role', roleFilter);
+  }, [roleFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_member_region', regionFilter);
+  }, [regionFilter]);
 
   const [isUploading, setIsUploading] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<number>>(new Set());

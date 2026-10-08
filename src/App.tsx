@@ -44,7 +44,18 @@ export const App: React.FC = () => {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(loadAttendance);
   const [settings, setSettings] = useState<LabelSettings>(loadSettings);
   const [printQueue, setPrintQueue] = useState<AttendanceRecord[]>(loadPrintQueue);
-  const [activeTab, setActiveTab] = useState<'checkin' | 'print' | 'dashboard' | 'members'>('checkin');
+  const [activeTab, setActiveTab] = useState<'checkin' | 'print' | 'dashboard' | 'members'>(() => {
+    const saved = localStorage.getItem('gosung_active_tab');
+    if (saved === 'checkin' || saved === 'print' || saved === 'dashboard' || saved === 'members') {
+      return saved;
+    }
+    return 'checkin';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('gosung_active_tab', activeTab);
+  }, [activeTab]);
+
   const [isCloudSynced, setIsCloudSynced] = useState(false);
 
   // 모달 제어
@@ -512,7 +523,7 @@ export const App: React.FC = () => {
 
       {/* 메인 콘텐츠 영역 */}
       <main className="no-print flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        {activeTab === 'checkin' && (
+        <div className={activeTab === 'checkin' ? 'block' : 'hidden'}>
           <CheckinDesk
             members={members}
             attendanceRecords={attendance}
@@ -524,9 +535,9 @@ export const App: React.FC = () => {
             onAddToQueue={handleAddToQueue}
             onEditMember={(member) => setEditTarget(member)}
           />
-        )}
+        </div>
 
-        {activeTab === 'print' && (
+        <div className={activeTab === 'print' ? 'block' : 'hidden'}>
           <PrintCenter
             queue={printQueue}
             allRecords={attendance}
@@ -537,9 +548,9 @@ export const App: React.FC = () => {
             onMarkPrinted={handleMarkPrinted}
             onBatchPrint={handleBatchPrint}
           />
-        )}
+        </div>
 
-        {activeTab === 'dashboard' && (
+        <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
           <Dashboard
             records={attendance}
             eventName={settings.eventName}
@@ -561,9 +572,9 @@ export const App: React.FC = () => {
               setCheckinTarget(target);
             }}
           />
-        )}
+        </div>
 
-        {activeTab === 'members' && (
+        <div className={activeTab === 'members' ? 'block' : 'hidden'}>
           <MemberList
             members={members}
             attendanceRecords={attendance}
@@ -574,7 +585,7 @@ export const App: React.FC = () => {
             onBatchPrint={handleBatchPrint}
             onAddToQueue={handleAddToQueue}
           />
-        )}
+        </div>
       </main>
 
       {/* 현장 접수 & 회비 수정 모달 */}

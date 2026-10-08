@@ -55,10 +55,39 @@ export const SponsorshipBannerModal: React.FC<SponsorshipBannerModalProps> = ({
     initialGeneration ? `${String(initialGeneration).replace(/[^0-9]/g, '')}세` : '30세'
   );
   const [amountText, setAmountText] = useState(getSmartInitialAmount(initialAmount));
-  const [bannerLengthMm, setBannerLengthMm] = useState<number>(650); // 600, 650, 700mm
-  const [layoutType, setLayoutType] = useState<'amount-first' | 'name-first'>('name-first'); // 기본 추천: 성명 우선형 (B타입)
-  const [fontFamily, setFontFamily] = useState<'gungsuh' | 'myeongjo'>('gungsuh');
-  const [zoomScale, setZoomScale] = useState<number>(0.55); // 전체가 한눈에 들어오는 기본 배율
+  const [bannerLengthMm, setBannerLengthMm] = useState<number>(() => {
+    const saved = localStorage.getItem('gosung_ribbon_length');
+    return saved ? Number(saved) : 650;
+  });
+  const [layoutType, setLayoutType] = useState<'amount-first' | 'name-first'>(() => {
+    const saved = localStorage.getItem('gosung_ribbon_layout');
+    return (saved as 'amount-first' | 'name-first') || 'name-first';
+  });
+  const [fontFamily, setFontFamily] = useState<'gungsuh' | 'myeongjo'>(() => {
+    const saved = localStorage.getItem('gosung_ribbon_font');
+    return (saved as 'gungsuh' | 'myeongjo') || 'gungsuh';
+  });
+  const [zoomScale, setZoomScale] = useState<number>(() => {
+    const saved = localStorage.getItem('gosung_ribbon_zoom');
+    return saved ? Number(saved) : 0.55;
+  });
+
+  // 설정값 변경 시 즉시 localStorage 영구 저장
+  useEffect(() => {
+    localStorage.setItem('gosung_ribbon_length', String(bannerLengthMm));
+  }, [bannerLengthMm]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_ribbon_layout', layoutType);
+  }, [layoutType]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_ribbon_font', fontFamily);
+  }, [fontFamily]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_ribbon_zoom', String(zoomScale));
+  }, [zoomScale]);
 
   useEffect(() => {
     if (isOpen) {

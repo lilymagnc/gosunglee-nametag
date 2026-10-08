@@ -59,7 +59,7 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
     existingRecord !== undefined ? existingRecord.feeAmount : 20000
   );
   const [paymentMethod, setPaymentMethod] = useState<'현금' | '계좌이체' | '카드' | '기타' | '미납'>(
-    existingRecord?.paymentMethod || '현금'
+    existingRecord?.paymentMethod || (localStorage.getItem('gosung_last_payment_method') as any) || '현금'
   );
   const [notes, setNotes] = useState(existingRecord?.notes || '');
 
@@ -71,6 +71,17 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
   const [previewThermal, setPreviewThermal] = useState<'color' | 'outline' | 'inverted' | 'textOnly'>(
     settings.thermalMode || (settings.paperSize === 'formtec_3114' ? 'color' : 'inverted')
   );
+
+  // 납부 방식 변경 시 직전 선택 기억
+  useEffect(() => {
+    localStorage.setItem('gosung_last_payment_method', paymentMethod);
+  }, [paymentMethod]);
+
+  // 전역 설정 변경 시 실시간 동기화
+  useEffect(() => {
+    if (settings.paperSize) setPaperSize(settings.paperSize);
+    if (settings.thermalMode) setPreviewThermal(settings.thermalMode);
+  }, [settings.paperSize, settings.thermalMode]);
 
   // 80mm 협찬금 리본 모달 제어 상태
   const [isSponsorshipOpen, setIsSponsorshipOpen] = useState(false);
@@ -89,7 +100,7 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
     return getMemberHistory(member.id);
   }, [member.id]);
 
-  // 1. 회원이 바뀔 때만 폼 입력 필드 초기화 (settings 변경 시 입력 중이던 직책/회비 초기화 원천 방지!)
+  // 1. 회원이 바뀔 때만 폼 입력 필드 초기화 (직전 선택한 결제방식 및 슬롯 유지!)
   useEffect(() => {
     if (existingRecord) {
       setRole(existingRecord.role || member.role || '');
@@ -102,7 +113,8 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
     } else {
       setRole(member.role || '');
       setFeeAmount(20000);
-      setPaymentMethod('현금');
+      const lastPay = (localStorage.getItem('gosung_last_payment_method') as any) || '현금';
+      setPaymentMethod(lastPay);
       setNotes('');
       setSelectedSlot(settings.formtecStartSlot || 1);
     }
@@ -767,7 +779,10 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
                           <button
                             key={slotNum}
                             type="button"
-                            onClick={() => setSelectedSlot(slotNum)}
+                            onClick={() => {
+                              setSelectedSlot(slotNum);
+                              onUpdateSettings?.({ ...settings, formtecStartSlot: slotNum });
+                            }}
                             className={`h-10 rounded-md border flex items-center justify-between px-2.5 transition-all text-xs font-bold ${
                               isSelected
                                 ? 'bg-sky-600 text-white border-sky-600 shadow-md ring-2 ring-sky-300'

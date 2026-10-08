@@ -116,6 +116,14 @@ export const LabelCard: React.FC<LabelCardProps> = ({
 
   const showFooter = mode !== 'textOnly' && settings.showFooter;
 
+  // 상단 파명/세수 라인 중앙 가문 로고 (모드별 흑백/컬러 자동 최적화)
+  const headerLogoSrc =
+    mode === 'inverted'
+      ? '/logo-white.png'
+      : isThermal
+      ? '/logo-black.png'
+      : '/logo.png';
+
   // 고성이씨 공식 문양 워터마크 (폼텍 컬러는 기본 켜짐, 감열 모드는 지저분한 점묘 방지를 위해 자동 꺼짐)
   const showWatermark =
     settings.showWatermark !== false &&
@@ -220,7 +228,7 @@ export const LabelCard: React.FC<LabelCardProps> = ({
           printColorAdjust: 'exact',
         }}
       >
-        {/* 상단 직사각형 박스 (파명 / 세수) */}
+        {/* 상단 직사각형 박스 (파명 / 로고 / 세수) */}
         <div
           className="w-full flex items-center justify-between px-3 box-border"
           style={{
@@ -232,7 +240,7 @@ export const LabelCard: React.FC<LabelCardProps> = ({
           }}
         >
           <div
-            className="font-black tracking-wider text-black"
+            className="font-black tracking-wider text-black shrink-0"
             style={{
               fontSize: is80x60 ? '15pt' : '17pt',
               lineHeight: 1,
@@ -242,8 +250,22 @@ export const LabelCard: React.FC<LabelCardProps> = ({
           >
             {branch || '고성이씨'}
           </div>
+
+          {/* 중앙 가문 문양 (모드별 흑백/컬러 자동 최적화) */}
+          <div className="flex-1 flex items-center justify-center h-full px-1">
+            <img
+              src={headerLogoSrc}
+              alt="고성이씨 문양"
+              className="object-contain"
+              style={{
+                height: is80x60 ? '9.5mm' : '10.5mm',
+                maxHeight: is80x60 ? '9.5mm' : '10.5mm',
+              }}
+            />
+          </div>
+
           <div
-            className="font-black tracking-widest text-black"
+            className="font-black tracking-widest text-black shrink-0"
             style={{
               fontSize: is80x60 ? '14pt' : '16pt',
               lineHeight: 1,
@@ -372,7 +394,7 @@ export const LabelCard: React.FC<LabelCardProps> = ({
         printColorAdjust: 'exact',
       }}
     >
-      {/* 1. 상단 직사각형 박스 (파명 / 세수) */}
+      {/* 1. 상단 직사각형 박스 (파명 / 로고 / 세수) */}
       <div
         className="w-full flex items-center justify-between px-3 box-border"
         style={{
@@ -385,7 +407,7 @@ export const LabelCard: React.FC<LabelCardProps> = ({
         }}
       >
         <div
-          className="font-black tracking-wider text-black"
+          className="font-black tracking-wider text-black shrink-0"
           style={{
             fontSize: is80x60 ? '15px' : '17px',
             lineHeight: 1,
@@ -395,8 +417,22 @@ export const LabelCard: React.FC<LabelCardProps> = ({
         >
           {branch || '고성이씨'}
         </div>
+
+        {/* 중앙 가문 문양 (모드별 흑백/컬러 자동 최적화) */}
+        <div className="flex-1 flex items-center justify-center h-full px-1">
+          <img
+            src={headerLogoSrc}
+            alt="고성이씨 문양"
+            className="object-contain"
+            style={{
+              height: is80x60 ? '26px' : '30px',
+              maxHeight: is80x60 ? '26px' : '30px',
+            }}
+          />
+        </div>
+
         <div
-          className="font-black tracking-widest text-black"
+          className="font-black tracking-widest text-black shrink-0"
           style={{
             fontSize: is80x60 ? '14px' : '16px',
             lineHeight: 1,

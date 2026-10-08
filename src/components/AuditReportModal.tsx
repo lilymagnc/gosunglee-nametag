@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EventRecord, AttendanceRecord, ExpenseItem, ExpenseCategory } from '../types';
-import { X, Printer, FileText, CheckCircle2, Image as ImageIcon, ChevronRight } from 'lucide-react';
+import { X, Printer, FileText, CheckCircle2, Image as ImageIcon, ChevronRight, Users } from 'lucide-react';
 
 interface AuditReportModalProps {
   isOpen: boolean;
@@ -17,9 +17,44 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
   attendanceRecords,
   expenses,
 }) => {
-  const [includeReceipts, setIncludeReceipts] = useState<boolean>(true);
-  const [auditorName, setAuditorName] = useState<string>('이 종 춘');
-  const [presidentName, setPresidentName] = useState<string>('이 성 원');
+  // 감사 인원수 (1인 vs 2인) - 종친회 표준 2인 기본값
+  const [auditorCount, setAuditorCount] = useState<1 | 2>(() => {
+    const saved = localStorage.getItem('gosunglee_audit_count');
+    return saved === '1' ? 1 : 2;
+  });
+  const [auditorName1, setAuditorName1] = useState<string>(() => {
+    return localStorage.getItem('gosunglee_auditor1') || '이 종 춘';
+  });
+  const [auditorName2, setAuditorName2] = useState<string>(() => {
+    return localStorage.getItem('gosunglee_auditor2') || '이 원 구';
+  });
+  const [presidentName, setPresidentName] = useState<string>(() => {
+    return localStorage.getItem('gosunglee_president_name') || '이 성 원';
+  });
+  const [includeReceipts, setIncludeReceipts] = useState<boolean>(() => {
+    const saved = localStorage.getItem('gosunglee_audit_include_receipts');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('gosunglee_audit_count', String(auditorCount));
+  }, [auditorCount]);
+
+  useEffect(() => {
+    localStorage.setItem('gosunglee_auditor1', auditorName1);
+  }, [auditorName1]);
+
+  useEffect(() => {
+    localStorage.setItem('gosunglee_auditor2', auditorName2);
+  }, [auditorName2]);
+
+  useEffect(() => {
+    localStorage.setItem('gosunglee_president_name', presidentName);
+  }, [presidentName]);
+
+  useEffect(() => {
+    localStorage.setItem('gosunglee_audit_include_receipts', String(includeReceipts));
+  }, [includeReceipts]);
 
   if (!isOpen) return null;
 
@@ -335,7 +370,7 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
             <!-- 3. 감사의견 및 서명 -->
             <div class="audit-box">
               <div class="audit-opinion">
-                본 감사는 <strong>${event.name}</strong>의 수지 결산 보고서 및 관련 영수증·증빙 서류 일체를 
+                ${auditorCount === 2 ? '본 감사들은' : '본 감사는'} <strong>${event.name}</strong>의 수지 결산 보고서 및 관련 영수증·증빙 서류 일체를 
                 면밀히 대조·감사한 바, 모든 수입 및 지출이 종친회 회칙과 재정 규정에 의거하여 적법하고 투명하게 
                 집행되었음을 확인하고 이에 보고합니다.
               </div>
@@ -344,9 +379,15 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
               </div>
               <div class="sign-row">
                 <div class="sign-item">
-                  <span>감사 : ${auditorName}</span>
+                  <span>감사 : ${auditorName1}</span>
                   <span class="seal-box">인</span>
                 </div>
+                ${auditorCount === 2 ? `
+                <div class="sign-item">
+                  <span>감사 : ${auditorName2}</span>
+                  <span class="seal-box">인</span>
+                </div>
+                ` : ''}
                 <div class="sign-item">
                   <span>회장 : ${presidentName}</span>
                   <span class="seal-box">인</span>
@@ -467,34 +508,82 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
         {/* 상단 인쇄 옵션 바 */}
         <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-1.5 font-bold text-slate-700 cursor-pointer">
+            <label className="flex items-center gap-1.5 font-bold text-slate-700 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={includeReceipts}
                 onChange={(e) => setIncludeReceipts(e.target.checked)}
-                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
               />
               <span>영수증 사진 증빙철 함께 인쇄 (별첨)</span>
             </label>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* 감사 인원 선택 토글 */}
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-bold">감사 성명:</span>
+              <span className="text-slate-500 font-bold">감사 정원:</span>
+              <div className="inline-flex rounded-lg border border-slate-300 p-0.5 bg-slate-200/80">
+                <button
+                  type="button"
+                  onClick={() => setAuditorCount(1)}
+                  className={`px-2.5 py-1 text-xs font-black rounded-md transition-all cursor-pointer ${
+                    auditorCount === 1
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  감사 1인
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAuditorCount(2)}
+                  className={`px-2.5 py-1 text-xs font-black rounded-md transition-all cursor-pointer ${
+                    auditorCount === 2
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  감사 2인 (표준)
+                </button>
+              </div>
+            </div>
+
+            {/* 감사 1 성명 */}
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-bold">{auditorCount === 2 ? '감사1:' : '감사:'}</span>
               <input
                 type="text"
-                value={auditorName}
-                onChange={(e) => setAuditorName(e.target.value)}
-                className="w-20 px-2 py-1 border border-slate-300 rounded font-bold text-center"
+                value={auditorName1}
+                onChange={(e) => setAuditorName1(e.target.value)}
+                className="w-20 px-2 py-1 border border-slate-300 rounded font-bold text-center bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                placeholder="감사1"
               />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-bold">회장 성명:</span>
+
+            {/* 감사 2 성명 (감사 2인일 때만 표시) */}
+            {auditorCount === 2 && (
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500 font-bold">감사2:</span>
+                <input
+                  type="text"
+                  value={auditorName2}
+                  onChange={(e) => setAuditorName2(e.target.value)}
+                  className="w-20 px-2 py-1 border border-slate-300 rounded font-bold text-center bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  placeholder="감사2"
+                />
+              </div>
+            )}
+
+            {/* 회장 성명 */}
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 font-bold">회장:</span>
               <input
                 type="text"
                 value={presidentName}
                 onChange={(e) => setPresidentName(e.target.value)}
-                className="w-20 px-2 py-1 border border-slate-300 rounded font-bold text-center"
+                className="w-20 px-2 py-1 border border-slate-300 rounded font-bold text-center bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                placeholder="회장"
               />
             </div>
           </div>
@@ -609,7 +698,8 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
             {/* 감사 의견서 및 서명란 */}
             <div className="p-5 bg-slate-50 border border-slate-300 rounded-lg text-xs leading-relaxed space-y-4">
               <div className="font-serif text-slate-800 text-justify">
-                본 감사는 <strong>{event.name}</strong>의 수지 결산 보고서 및 관련 영수증·증빙 서류 일체를 
+                {auditorCount === 2 ? '본 감사들은' : '본 감사는'}{' '}
+                <strong>{event.name}</strong>의 수지 결산 보고서 및 관련 영수증·증빙 서류 일체를 
                 면밀히 대조·감사한 바, 모든 수입 및 지출이 종친회 회칙과 재정 규정에 의거하여 적법하고 투명하게 
                 집행되었음을 확인하고 이에 보고합니다.
               </div>
@@ -617,13 +707,21 @@ export const AuditReportModal: React.FC<AuditReportModalProps> = ({
                 {new Date().getFullYear()}년 {new Date().getMonth() + 1}월 {new Date().getDate()}일
               </div>
               <div className="flex justify-around items-center pt-2 font-bold font-sans text-sm">
-                <div className="flex items-center gap-3">
-                  <span>감사 : {auditorName}</span>
+                <div className="flex items-center gap-2.5">
+                  <span>감사 : {auditorName1}</span>
                   <span className="w-8 h-8 rounded-full border border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-400">
                     인
                   </span>
                 </div>
-                <div className="flex items-center gap-3">
+                {auditorCount === 2 && (
+                  <div className="flex items-center gap-2.5">
+                    <span>감사 : {auditorName2}</span>
+                    <span className="w-8 h-8 rounded-full border border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-400">
+                      인
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2.5">
                   <span>회장 : {presidentName}</span>
                   <span className="w-8 h-8 rounded-full border border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-400">
                     인

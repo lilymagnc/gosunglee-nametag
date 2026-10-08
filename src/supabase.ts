@@ -193,7 +193,7 @@ export async function loadSettingsFromSupabase(): Promise<LabelSettings> {
   }
 
   // 폴백: 로컬 스토리지
-  const saved = localStorage.getItem('gosunglee_label_settings');
+  const saved = localStorage.getItem('gosung_settings_v1') || localStorage.getItem('gosunglee_label_settings');
   if (saved) {
     try {
       return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };

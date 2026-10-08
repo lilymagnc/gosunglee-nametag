@@ -166,8 +166,11 @@ export const App: React.FC = () => {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'gosunglee_settings' }, (payload: any) => {
         if (payload.new && payload.new.settings) {
-          setSettings((prev) => ({ ...prev, ...payload.new.settings }));
-          saveSettings({ ...settings, ...payload.new.settings });
+          setSettings((prev) => {
+            const merged = { ...prev, ...payload.new.settings };
+            saveSettings(merged);
+            return merged;
+          });
         }
       })
       .subscribe();
@@ -231,6 +234,13 @@ export const App: React.FC = () => {
   const totalAttendance = attendance.length;
   const totalFee = attendance.reduce((sum, r) => sum + (r.feeAmount || 0), 0);
 
+  // 통합 환경설정 영구 저장 (React 상태 + 로컬스토리지 백업 + Supabase 클라우드 영구 저장)
+  const handleUpdateSettings = (newSettings: LabelSettings) => {
+    setSettings(newSettings);
+    saveSettings(newSettings);
+    saveSettingsToSupabase(newSettings);
+  };
+
   // [1] 현장 접수 완료 핸들러 (모달 내 실시간 수정 반영 + 슬롯 및 용지 동기화)
   const handleCompleteCheckin = (
     record: AttendanceRecord,
@@ -238,10 +248,9 @@ export const App: React.FC = () => {
     updatedMember?: Member,
     customSettings?: LabelSettings
   ) => {
-    // 용지 설정 동기화
+    // 용지 및 명찰 환경설정 동기화 (클라우드 영구 저장 포함)
     if (customSettings) {
-      setSettings(customSettings);
-      saveSettings(customSettings);
+      handleUpdateSettings(customSettings);
     }
 
     // 모달 안에서 회원 정보가 수정된 경우 원부 동기화 저장
@@ -319,8 +328,7 @@ export const App: React.FC = () => {
     customSettings?: LabelSettings
   ) => {
     if (customSettings) {
-      setSettings(customSettings);
-      saveSettings(customSettings);
+      handleUpdateSettings(customSettings);
     }
 
     setMembers((prev) => [newMember, ...prev]);
@@ -523,7 +531,7 @@ export const App: React.FC = () => {
             queue={printQueue}
             allRecords={attendance}
             settings={settings}
-            onUpdateSettings={setSettings}
+            onUpdateSettings={handleUpdateSettings}
             onRemoveFromQueue={handleRemoveFromQueue}
             onClearQueue={handleClearQueue}
             onMarkPrinted={handleMarkPrinted}
@@ -582,10 +590,7 @@ export const App: React.FC = () => {
             setEditTarget(m);
           }}
           onOpenSettings={() => setIsSettingsOpen(true)}
-          onUpdateSettings={(newSettings) => {
-            setSettings(newSettings);
-            saveSettings(newSettings);
-          }}
+          onUpdateSettings={handleUpdateSettings}
         />
       )}
 
@@ -596,10 +601,7 @@ export const App: React.FC = () => {
         onClose={() => setIsNewMemberOpen(false)}
         onRegister={handleRegisterNewMember}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onUpdateSettings={(newSettings) => {
-          setSettings(newSettings);
-          saveSettings(newSettings);
-        }}
+        onUpdateSettings={handleUpdateSettings}
       />
 
       {/* 회원 정보 수정 모달 */}
@@ -617,10 +619,7 @@ export const App: React.FC = () => {
         settings={settings}
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        onSave={(newSettings) => {
-          setSettings(newSettings);
-          saveSettings(newSettings);
-        }}
+        onSave={handleUpdateSettings}
       />
 
       {/* 즉시 단일 또는 다중 일괄 인쇄 전용 숨김 컨테이너 */}

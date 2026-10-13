@@ -178,7 +178,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
               </label>
               {affiliations.length > 1 && (
                 <span className="ml-auto text-[11px] font-black text-purple-800 bg-purple-100 border border-purple-300 px-2 py-0.5 rounded-full">
-                  [서울/용헌] 겸임
+                  [서울/용헌]
                 </span>
               )}
             </div>

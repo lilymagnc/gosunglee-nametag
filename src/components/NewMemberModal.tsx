@@ -276,7 +276,7 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
                 <span className="text-xs font-bold text-slate-700">소속 모임 (복수 선택 가능)</span>
                 {affiliations.length > 1 && (
                   <span className="text-[10px] font-black text-purple-800 bg-purple-100 border border-purple-300 px-2 py-0.2 rounded-full">
-                    [서울/용헌] 겸임
+                    [서울/용헌]
                   </span>
                 )}
               </div>

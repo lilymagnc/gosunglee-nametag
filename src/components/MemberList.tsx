@@ -465,7 +465,7 @@ export const MemberList: React.FC<MemberListProps> = ({
                 : 'bg-purple-50 text-purple-900 border-purple-300 hover:bg-purple-100'
             }`}
           >
-            [서울/용헌] 중복(겸임)
+            [서울/용헌]
             <span
               className={`px-2 py-0.2 rounded-full text-[10px] font-black ${
                 affiliationFilter === 'dual' ? 'bg-purple-900 text-white' : 'bg-purple-200 text-purple-900'

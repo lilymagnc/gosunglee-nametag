@@ -30,6 +30,7 @@ export interface AttendanceRecord {
   role?: string;
   job?: string; // 사회 직업 (회사/생업)
   mobile?: string;
+  email?: string;
   address?: string;
   feeAmount: number;     // 납부 회비 (0원은 면제 또는 미납)
   paymentMethod: '현금' | '계좌이체' | '카드' | '기타' | '미납';

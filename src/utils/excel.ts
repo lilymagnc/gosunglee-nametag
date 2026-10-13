@@ -43,6 +43,7 @@ export function exportAttendanceToExcel(
     '납부 회비(원)': r.feeAmount || 0,
     '납부 방식': r.paymentMethod,
     '연락처': cleanExcelPhone(r.mobile),
+    '이메일': cleanExcelText(r.email),
     '거주지/주소': cleanExcelText(r.address),
     '신규 등록': r.isNewMember ? '신규' : '기존',
     '비고(찬조 등)': cleanExcelText(r.notes),
@@ -53,6 +54,7 @@ export function exportAttendanceToExcel(
     '순번': '합계',
     '접수시간': `총 ${records.length}명 참석`,
     '성명': '',
+    '한자명': '',
     '파명': '',
     '세수': '',
     '직책': `현금: ${cashAmount.toLocaleString()}원 | 계좌: ${transferAmount.toLocaleString()}원`,
@@ -60,6 +62,7 @@ export function exportAttendanceToExcel(
     '납부 회비(원)': totalAmount,
     '납부 방식': '',
     '연락처': '',
+    '이메일': '',
     '거주지/주소': '',
     '신규 등록': '',
     '비고(찬조 등)': `총액: ${totalAmount.toLocaleString()}원`,
@@ -72,6 +75,7 @@ export function exportAttendanceToExcel(
     { wch: 6 },  // 순번
     { wch: 18 }, // 접수시간
     { wch: 10 }, // 성명
+    { wch: 8 },  // 한자명
     { wch: 12 }, // 파명
     { wch: 8 },  // 세수
     { wch: 15 }, // 직책
@@ -79,6 +83,7 @@ export function exportAttendanceToExcel(
     { wch: 14 }, // 납부 회비
     { wch: 10 }, // 납부 방식
     { wch: 16 }, // 연락처
+    { wch: 24 }, // 이메일
     { wch: 35 }, // 주소
     { wch: 10 }, // 신규
     { wch: 25 }, // 비고
@@ -92,14 +97,16 @@ export function exportAttendanceToExcel(
     const newMemberData = newMembers.map((r, idx) => ({
       '순번': idx + 1,
       '성명': r.name,
+      '한자명': r.nameHanja || '',
       '파명': r.branch,
       '세수': r.generation,
       '직책': r.role || '',
-      '직업': r.job || '',
-      '연락처': r.mobile || '',
-      '주소': r.address || '',
+      '직업': cleanExcelText(r.job),
+      '연락처': cleanExcelPhone(r.mobile),
+      '이메일': cleanExcelText(r.email),
+      '주소': cleanExcelText(r.address),
       '납부 회비': r.feeAmount,
-      '비고': r.notes || '',
+      '비고': cleanExcelText(r.notes),
       '등록일시': r.timestamp,
     }));
     const wsNew = XLSX.utils.json_to_sheet(newMemberData);

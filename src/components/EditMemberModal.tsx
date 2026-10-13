@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Member } from '../types';
 import { BRANCHES, ROLE_PRESETS } from '../data/defaultMembers';
-import { Edit3, X, Save, Phone, MapPin, User } from 'lucide-react';
+import { Edit3, X, Save, Phone, MapPin, User, Mail } from 'lucide-react';
 
 interface EditMemberModalProps {
   member: Member;
@@ -23,6 +23,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
   const [birthYear, setBirthYear] = useState(String(member.birthYear || ''));
   const [role, setRole] = useState(member.role || '');
   const [mobile, setMobile] = useState(member.mobile || member.phone || '');
+  const [email, setEmail] = useState(member.email || '');
   const [address, setAddress] = useState(member.address || '');
   const [job, setJob] = useState(member.job || '');
   const [notes, setNotes] = useState(member.notes || '');
@@ -59,6 +60,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
       birthYear: birthYear.trim() || undefined,
       role: role.trim(),
       mobile: mobile.trim(),
+      email: email.trim() || undefined,
       address: address.trim(),
       job: job.trim(),
       notes: notes.trim() || undefined,
@@ -240,20 +242,38 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
             </div>
           </div>
 
-          {/* 연락처 (휴대폰) */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              연락처 (휴대폰 번호) <span className="text-sky-600 text-[11px]">*수정 즉시 반영</span>
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                placeholder="예: 010-3911-8206"
-                className="w-full pl-9 pr-3 py-2 text-sm font-semibold border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 bg-amber-50/40"
-              />
+          {/* 연락처 및 이메일 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                연락처 (휴대폰 번호) <span className="text-sky-600 text-[11px]">*수정 즉시 반영</span>
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                  placeholder="예: 010-3911-8206"
+                  className="w-full pl-9 pr-3 py-2 text-sm font-semibold border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 bg-amber-50/40"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                이메일 주소
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="예: leedc@savet.co.kr"
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                />
+              </div>
             </div>
           </div>
 

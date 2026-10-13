@@ -220,6 +220,7 @@ export const MemberList: React.FC<MemberListProps> = ({
       const cleanPhone = (m.mobile || m.phone || '').replace(/[^0-9]/g, '');
       const cleanQuery = q.replace(/[^0-9]/g, '');
       if (cleanQuery && cleanPhone.includes(cleanQuery)) return true;
+      if (m.email && m.email.toLowerCase().includes(q.toLowerCase())) return true;
       if (m.branch && m.branch.includes(q)) return true;
       if (m.role && m.role.includes(q)) return true;
       if (m.job && m.job.includes(q)) return true;
@@ -332,6 +333,7 @@ export const MemberList: React.FC<MemberListProps> = ({
         '회비납부': att ? `${att.feeAmount.toLocaleString()}원 (${att.paymentMethod})` : '-',
         '명찰출력': att ? `${att.printedCount}회` : '-',
         '연락처': cleanExcelPhone(m.mobile || m.phone || ''),
+        '이메일': cleanExcelText(m.email || ''),
         '거주지/주소': cleanExcelText(m.address || ''),
         '직업': cleanExcelText(m.job || ''),
         '비고': cleanExcelText(m.notes || ''),
@@ -353,6 +355,7 @@ export const MemberList: React.FC<MemberListProps> = ({
       { wch: 16 }, // 회비납부
       { wch: 10 }, // 명찰출력
       { wch: 18 }, // 연락처
+      { wch: 24 }, // 이메일
       { wch: 38 }, // 거주지/주소
       { wch: 18 }, // 직업
       { wch: 22 }, // 비고
@@ -816,7 +819,14 @@ export const MemberList: React.FC<MemberListProps> = ({
                           </span>
                         )}
                       </td>
-                      <td className="px-3.5 py-2 font-mono text-[11px]">{m.mobile || m.phone || '-'}</td>
+                      <td className="px-3.5 py-2 font-mono text-[11px]">
+                        <div>{m.mobile || m.phone || '-'}</div>
+                        {m.email && (
+                          <div className="text-[10px] text-sky-600 font-sans truncate max-w-[140px] mt-0.5" title={m.email}>
+                            ✉️ {m.email}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-3.5 py-2 max-w-[240px]">
                         <div className="truncate text-slate-700" title={m.address || ''}>
                           {m.address || '-'}

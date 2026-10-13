@@ -13,6 +13,7 @@ import {
   Check,
   AlertTriangle,
   Phone,
+  Mail,
   MapPin,
   ArrowRight,
 } from 'lucide-react';
@@ -53,6 +54,7 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
   const [role, setRole] = useState('');
   const [job, setJob] = useState('');
   const [mobile, setMobile] = useState('');
+  const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [feeAmount, setFeeAmount] = useState<number>(20000);
   const [paymentMethod, setPaymentMethod] = useState<'현금' | '계좌이체' | '카드' | '기타' | '미납'>('현금');
@@ -152,6 +154,7 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
       role: role.trim(),
       job: job.trim(),
       mobile: mobile.trim(),
+      email: email.trim() || undefined,
       address: address.trim(),
       notes: notes.trim() || undefined,
       affiliations,
@@ -169,6 +172,7 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
       role: role.trim(),
       job: job.trim(),
       mobile: mobile.trim(),
+      email: email.trim() || undefined,
       address: address.trim(),
       feeAmount,
       paymentMethod,
@@ -451,7 +455,7 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
               />
             </div>
 
-            {/* 4. 연락처 및 주소 */}
+            {/* 4. 연락처 및 이메일 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -467,16 +471,30 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  거주지 / 주소
+                  이메일 주소 (선택)
                 </label>
                 <input
-                  type="text"
-                  placeholder="예: 서울 송파구 잠실동"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  type="email"
+                  placeholder="예: example@naver.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
                 />
               </div>
+            </div>
+
+            {/* 4-1. 거주지 / 주소 */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                거주지 / 주소
+              </label>
+              <input
+                type="text"
+                placeholder="예: 서울 송파구 잠실동"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+              />
             </div>
 
             {/* 5. 회비 금액 & 납부 방식 */}

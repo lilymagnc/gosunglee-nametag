@@ -200,6 +200,7 @@ export const CheckinModal: React.FC<CheckinModalProps> = ({
       role: role.trim(),
       job: editJob.trim(),
       mobile: finalMobile,
+      email: member.email,
       address: finalAddress,
       feeAmount,
       paymentMethod,

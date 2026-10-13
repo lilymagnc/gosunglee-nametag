@@ -3,7 +3,19 @@ import { Member, AttendanceRecord, LabelSettings, PaperSize } from '../types';
 import { BRANCHES, ROLE_PRESETS } from '../data/defaultMembers';
 import { CURRENT_EVENT } from '../utils/storage';
 import { LabelCard } from './LabelCard';
-import { UserPlus, Printer, Clock, X, DollarSign, Layers, Check } from 'lucide-react';
+import {
+  UserPlus,
+  Printer,
+  Clock,
+  X,
+  DollarSign,
+  Layers,
+  Check,
+  AlertTriangle,
+  Phone,
+  MapPin,
+  ArrowRight,
+} from 'lucide-react';
 
 interface NewMemberModalProps {
   settings: LabelSettings;
@@ -17,6 +29,9 @@ interface NewMemberModalProps {
   ) => void;
   onOpenSettings?: () => void;
   onUpdateSettings?: (settings: LabelSettings) => void;
+  members?: Member[];
+  attendanceRecords?: AttendanceRecord[];
+  onSelectExistingMember?: (member: Member) => void;
 }
 
 export const NewMemberModal: React.FC<NewMemberModalProps> = ({
@@ -26,6 +41,9 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
   onRegister,
   onOpenSettings,
   onUpdateSettings,
+  members = [],
+  attendanceRecords = [],
+  onSelectExistingMember,
 }) => {
   const [name, setName] = useState('');
   const [branch, setBranch] = useState<string>('사암공파');
@@ -77,10 +95,35 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
 
   const effectiveBranch = branch === '직접입력' ? customBranch.trim() || '미지정' : branch;
 
+  // 기존 회원 중 동일 성함 종친 실시간 검색 (동명이인 및 중복 감지)
+  const matchingExistingMembers = React.useMemo(() => {
+    const trimmed = name.trim();
+    if (!members || !trimmed || trimmed.length < 2) return [];
+    return members.filter((m) => m.name.trim() === trimmed);
+  }, [name, members]);
+
   const handleSubmit = (printNow: boolean) => {
     if (!name.trim()) {
       alert('성함을 입력해 주세요.');
       return;
+    }
+
+    // 동일 이름 및 유사 연락처/파명이 일치하는 경우 중복 등록 안전 확인
+    if (matchingExistingMembers.length > 0) {
+      const cleanMobile = mobile.replace(/[^0-9]/g, '');
+      const exactMatch = matchingExistingMembers.find((m) => {
+        const mMobile = (m.mobile || m.phone || '').replace(/[^0-9]/g, '');
+        const sameBranch = m.branch === effectiveBranch;
+        const samePhone = cleanMobile && mMobile && (cleanMobile === mMobile || (cleanMobile.length >= 4 && mMobile.endsWith(cleanMobile.slice(-4))));
+        return sameBranch || samePhone;
+      });
+
+      if (exactMatch) {
+        const proceed = confirm(
+          `⚠️ [중복 등록 확인]\n\n기존 주소록에 이미 [${exactMatch.name} (${exactMatch.branch} ${exactMatch.generation ? exactMatch.generation + '세' : ''})] 종친이 등록되어 있습니다.\n\n정말로 새로운 회원 번호로 중복 추가하시겠습니까?\n(기존 회원으로 접수하시려면 '취소'를 누르신 후 상단 안내창의 [이 분으로 접수] 버튼을 눌러주세요)`
+        );
+        if (!proceed) return;
+      }
     }
 
     const memberId = Date.now();
@@ -195,6 +238,82 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* ⚠️ 기존 회원 중복 알림 배너 */}
+            {matchingExistingMembers.length > 0 && (
+              <div className="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl space-y-2.5 animate-in fade-in">
+                <div className="flex items-center justify-between text-xs font-black text-amber-950">
+                  <span className="flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>기존 주소록에 동일 성함 종친이 있습니다! ({matchingExistingMembers.length}명)</span>
+                  </span>
+                  <span className="text-[10px] text-amber-800 font-bold bg-amber-200/70 px-2 py-0.5 rounded-full">
+                    중복 등록 주의
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-900 leading-tight">
+                  아래 종친 중 한 분이 맞다면 중복 생성하지 마시고 <strong>[👉 이 분으로 즉시 접수]</strong>를 누르세요. 다른 분(동명이인)일 때만 계속 작성하세요.
+                </p>
+
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                  {matchingExistingMembers.map((m) => {
+                    const isCheckedIn = attendanceRecords?.some(
+                      (r) => r.memberId === m.id && (r.year === (settings.eventYear || 2026))
+                    );
+                    return (
+                      <div
+                        key={m.id}
+                        className="p-2.5 bg-white border border-amber-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs hover:border-amber-400 transition-all"
+                      >
+                        <div className="text-xs space-y-0.5">
+                          <div className="font-black text-slate-900 flex items-center gap-2">
+                            <span className="text-sm">{m.name}</span>
+                            <span className="text-[11px] font-bold text-sky-800 bg-sky-100 px-1.5 py-0.2 rounded">
+                              {m.branch} {m.generation ? `${m.generation}세` : ''}
+                            </span>
+                            {m.role && (
+                              <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded font-bold border border-amber-200">
+                                {m.role}
+                              </span>
+                            )}
+                            {isCheckedIn && (
+                              <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+                                오늘 이미 접수 완료됨
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
+                            {(m.mobile || m.phone) && (
+                              <span className="flex items-center gap-1 font-mono">
+                                <Phone className="w-3 h-3 text-slate-400" />
+                                {m.mobile || m.phone}
+                              </span>
+                            )}
+                            {m.address && (
+                              <span className="flex items-center gap-1 truncate max-w-[240px]">
+                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                {m.address}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {onSelectExistingMember && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectExistingMember(m)}
+                            className="px-3 py-1.5 text-xs font-black text-white bg-amber-600 hover:bg-amber-700 active:scale-95 rounded-lg shadow-sm whitespace-nowrap flex items-center gap-1 shrink-0 cursor-pointer transition-all self-end sm:self-center"
+                          >
+                            <span>👉 이 분으로 접수</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* 2. 파명 선택 */}
             <div>

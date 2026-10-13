@@ -618,6 +618,12 @@ export const App: React.FC = () => {
           isOpen={isNewMemberOpen}
           onClose={() => setIsNewMemberOpen(false)}
           onRegister={handleRegisterNewMember}
+          members={members}
+          attendanceRecords={attendance}
+          onSelectExistingMember={(member) => {
+            setIsNewMemberOpen(false);
+            setCheckinTarget(member);
+          }}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onUpdateSettings={handleUpdateSettings}
         />

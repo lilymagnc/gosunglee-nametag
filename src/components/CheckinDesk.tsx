@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { SponsorshipBannerModal } from './SponsorshipBannerModal';
 import { TravelFeeReportModal } from './TravelFeeReportModal';
+import { Pagination } from './Pagination';
 
 interface CheckinDeskProps {
   members: Member[];
@@ -220,10 +221,30 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
     selectedBranch !== '전체'
   );
 
-  // 화면 표시 개수 제한 (성능 최적화: 검색어/필터 있으면 150개, 없으면 기본 40개)
+  // 페이지네이션 상태 (기본 50개씩)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
+  // 검색어나 필터 조건이 바뀔 때 1페이지로 자동 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchQuery,
+    affiliationFilter,
+    selectedBranch,
+    attendanceTab,
+    onlyUnprinted,
+    onlyExecutives,
+    generationFilter,
+  ]);
+
+  const totalPages = Math.ceil(filteredMembers.length / pageSize) || 1;
+
+  // 현재 페이지에 해당하는 50개 데이터 슬라이스
   const displayList = useMemo(() => {
-    return filteredMembers.slice(0, isFiltering ? 150 : 40);
-  }, [filteredMembers, isFiltering]);
+    const start = (currentPage - 1) * pageSize;
+    return filteredMembers.slice(start, start + pageSize);
+  }, [filteredMembers, currentPage, pageSize]);
 
   // 다중 선택 상태 (선택된 memberId Set)
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<number>>(new Set());
@@ -867,6 +888,16 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
             })}
           </div>
         )}
+
+        {/* 게시판형 페이지네이션 네비게이션 */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredMembers.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* 화면 하단 고정 플로팅 일괄 인쇄 바 (스크롤 중에도 1클릭 즉시 인쇄 가능) */}

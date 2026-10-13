@@ -21,6 +21,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { Pagination } from './Pagination';
 
 interface MemberListProps {
   members: Member[];
@@ -242,7 +243,30 @@ export const MemberList: React.FC<MemberListProps> = ({
     attendanceMap,
   ]);
 
-  const displayedMembers = filtered.slice(0, 200);
+  // 페이지네이션 상태 (기본 50개씩)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
+  // 검색어나 필터 조건 변경 시 1페이지로 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchQuery,
+    affiliationFilter,
+    selectedBranch,
+    attendanceStatus,
+    printStatus,
+    generationFilter,
+    roleFilter,
+    regionFilter,
+  ]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+
+  const displayedMembers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const isAllSelected =
     displayedMembers.length > 0 &&
@@ -656,12 +680,10 @@ export const MemberList: React.FC<MemberListProps> = ({
 
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-700">
-              총 <strong className="text-sky-600 font-black">{filtered.length}명</strong> 검색됨
-              {filtered.length > displayedMembers.length && (
-                <span className="text-slate-400 font-normal ml-1">
-                  (상위 {displayedMembers.length}명 표시 중)
-                </span>
-              )}
+              총 <strong className="text-sky-600 font-black">{filtered.length.toLocaleString()}명</strong> 검색됨
+              <span className="text-slate-400 font-normal ml-1">
+                ({currentPage} / {totalPages}페이지)
+              </span>
             </span>
 
             {/* 선택 일괄 인쇄 버튼 */}
@@ -862,6 +884,16 @@ export const MemberList: React.FC<MemberListProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* 게시판형 페이지네이션 네비게이션 */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </div>
     </div>
   );

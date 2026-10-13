@@ -9,6 +9,7 @@ export function cleanExcelPhone(str?: string): string {
   let s = str.replace(/\r/g, '').replace(/[\n\t]+/g, ' ');
   s = s.replace(/\s*-\s*/g, '-');
   s = s.replace(/(\d{2,4})\s*\)\s*/g, '$1) ');
+  s = s.replace(/^\s*\)\s*/, '');
   return s.replace(/\s+/g, ' ').trim();
 }
 

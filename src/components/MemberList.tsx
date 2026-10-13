@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Member, AttendanceRecord, LabelSettings } from '../types';
-import { parseExcelToMembers } from '../utils/excel';
+import { parseExcelToMembers, cleanExcelPhone, cleanExcelText } from '../utils/excel';
 import { matchKorean } from '../utils/hangul';
 import {
   Users,
@@ -331,15 +331,33 @@ export const MemberList: React.FC<MemberListProps> = ({
         '출석상태': att ? '출석(접수완료)' : '미출석',
         '회비납부': att ? `${att.feeAmount.toLocaleString()}원 (${att.paymentMethod})` : '-',
         '명찰출력': att ? `${att.printedCount}회` : '-',
-        '연락처': m.mobile || m.phone || '',
-        '거주지/주소': m.address || '',
-        '직업': m.job || '',
-        '비고': m.notes || '',
+        '연락처': cleanExcelPhone(m.mobile || m.phone || ''),
+        '거주지/주소': cleanExcelText(m.address || ''),
+        '직업': cleanExcelText(m.job || ''),
+        '비고': cleanExcelText(m.notes || ''),
         '등록유형': m.isCustom ? '현장신규' : '기존원부',
       };
     });
 
     const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 6 },  // 순번
+      { wch: 10 }, // 성명
+      { wch: 8 },  // 한자명
+      { wch: 12 }, // 파명
+      { wch: 8 },  // 세수
+      { wch: 8 },  // 생년
+      { wch: 14 }, // 소속
+      { wch: 14 }, // 직책
+      { wch: 14 }, // 출석상태
+      { wch: 16 }, // 회비납부
+      { wch: 10 }, // 명찰출력
+      { wch: 18 }, // 연락처
+      { wch: 38 }, // 거주지/주소
+      { wch: 18 }, // 직업
+      { wch: 22 }, // 비고
+      { wch: 10 }, // 등록유형
+    ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '고성이씨_주소록');
     XLSX.writeFile(wb, `고성이씨_주소록_${filtered.length}명.xlsx`);

@@ -2,6 +2,22 @@ import * as XLSX from 'xlsx';
 import { AttendanceRecord, Member } from '../types';
 
 /**
+ * 엑셀 내보내기 시 줄바꿈(\n, \r)으로 인해 네모 상자(깨진 글자)가 생기지 않도록 정제하는 유틸리티
+ */
+export function cleanExcelPhone(str?: string): string {
+  if (!str) return '';
+  let s = str.replace(/\r/g, '').replace(/[\n\t]+/g, ' ');
+  s = s.replace(/\s*-\s*/g, '-');
+  s = s.replace(/(\d{2,4})\s*\)\s*/g, '$1) ');
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+export function cleanExcelText(str?: string): string {
+  if (!str) return '';
+  return str.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
  * 당일 행사 참석자 및 회비 수납 대장을 엑셀(.xlsx) 파일로 내보내기
  */
 export function exportAttendanceToExcel(
@@ -19,16 +35,17 @@ export function exportAttendanceToExcel(
     '순번': idx + 1,
     '접수시간': r.timestamp,
     '성명': r.name,
+    '한자명': r.nameHanja || '',
     '파명': r.branch,
     '세수': r.generation ? `${r.generation}세` : '',
     '직책': r.role || '',
-    '직업': r.job || '',
+    '직업': cleanExcelText(r.job),
     '납부 회비(원)': r.feeAmount || 0,
     '납부 방식': r.paymentMethod,
-    '연락처': r.mobile || '',
-    '거주지/주소': r.address || '',
+    '연락처': cleanExcelPhone(r.mobile),
+    '거주지/주소': cleanExcelText(r.address),
     '신규 등록': r.isNewMember ? '신규' : '기존',
-    '비고(찬조 등)': r.notes || '',
+    '비고(찬조 등)': cleanExcelText(r.notes),
   }));
 
   // 합계 요약 행 추가

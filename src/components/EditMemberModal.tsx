@@ -17,12 +17,31 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
   onSave,
 }) => {
   const [name, setName] = useState(member.name);
+  const [nameHanja, setNameHanja] = useState(member.nameHanja || '');
   const [branch, setBranch] = useState(member.branch);
   const [generation, setGeneration] = useState(String(member.generation || ''));
+  const [birthYear, setBirthYear] = useState(String(member.birthYear || ''));
   const [role, setRole] = useState(member.role || '');
   const [mobile, setMobile] = useState(member.mobile || member.phone || '');
   const [address, setAddress] = useState(member.address || '');
   const [job, setJob] = useState(member.job || '');
+  const [notes, setNotes] = useState(member.notes || '');
+  const [affiliations, setAffiliations] = useState<string[]>(
+    member.affiliations && member.affiliations.length > 0
+      ? member.affiliations
+      : ['서울종친회']
+  );
+
+  const toggleAffiliation = (group: string) => {
+    setAffiliations((prev) => {
+      if (prev.includes(group)) {
+        if (prev.length === 1) return prev; // 최소 1개 유지
+        return prev.filter((g) => g !== group);
+      } else {
+        return [...prev, group];
+      }
+    });
+  };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,12 +53,17 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
     const updated: Member = {
       ...member,
       name: name.trim(),
+      nameHanja: nameHanja.trim() || undefined,
       branch: branch.trim() || '미지정',
       generation: generation.trim() ? parseInt(generation, 10) || generation.trim() : '',
+      birthYear: birthYear.trim() || undefined,
       role: role.trim(),
       mobile: mobile.trim(),
       address: address.trim(),
       job: job.trim(),
+      notes: notes.trim() || undefined,
+      affiliations,
+      isDuplicate: affiliations.length > 1,
     };
 
     onSave(updated);
@@ -67,11 +91,11 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
 
         {/* 입력 폼 */}
         <form onSubmit={handleFormSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-          {/* 성명 & 세수 */}
+          {/* 성명 & 한자 성명 */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                성명 <span className="text-red-500">*</span>
+                성명 (한글) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
@@ -87,15 +111,76 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
+                한자 성명 (名)
+              </label>
+              <input
+                type="text"
+                value={nameHanja}
+                onChange={(e) => setNameHanja(e.target.value)}
+                placeholder="예: 森烈, 聖圓"
+                className="w-full px-3 py-2 text-sm font-serif border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+          </div>
+
+          {/* 세수 & 생년 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
                 세수 (XX 세)
               </label>
               <input
                 type="number"
                 value={generation}
                 onChange={(e) => setGeneration(e.target.value)}
-                placeholder="예: 33"
+                placeholder="예: 29"
                 className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                출생 연도 (생년)
+              </label>
+              <input
+                type="text"
+                value={birthYear}
+                onChange={(e) => setBirthYear(e.target.value)}
+                placeholder="예: 1938, 1973"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+          </div>
+
+          {/* 소속 모임 및 중복 여부 */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              소속 모임 (복수 선택 가능)
+            </label>
+            <div className="flex items-center gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={affiliations.includes('서울종친회')}
+                  onChange={() => toggleAffiliation('서울종친회')}
+                  className="rounded text-sky-600 focus:ring-sky-500 w-4 h-4"
+                />
+                서울종친회
+              </label>
+              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={affiliations.includes('용헌종중')}
+                  onChange={() => toggleAffiliation('용헌종중')}
+                  className="rounded text-teal-600 focus:ring-teal-500 w-4 h-4"
+                />
+                용헌종중
+              </label>
+              {affiliations.length > 1 && (
+                <span className="ml-auto text-[11px] font-black text-purple-800 bg-purple-100 border border-purple-300 px-2 py-0.5 rounded-full">
+                  [서울/용헌] 겸임
+                </span>
+              )}
             </div>
           </div>
 
@@ -147,7 +232,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
               </select>
               <input
                 type="text"
-                placeholder="직책 직접 입력"
+                placeholder="직책 직접 입력 (예: 용헌종중 회장)"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 className="w-1/2 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500"
@@ -155,7 +240,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
             </div>
           </div>
 
-          {/* 연락처 (휴대폰) - 문제의 8206 vs 9206 */}
+          {/* 연락처 (휴대폰) */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
               연락처 (휴대폰 번호) <span className="text-sky-600 text-[11px]">*수정 즉시 반영</span>
@@ -189,18 +274,33 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
             </div>
           </div>
 
-          {/* 직업 / 비고 */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              직업 또는 비고
-            </label>
-            <input
-              type="text"
-              value={job}
-              onChange={(e) => setJob(e.target.value)}
-              placeholder="예: 회사원, 자영업 등"
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500"
-            />
+          {/* 직업 & 비고 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                사회 생업 (직업)
+              </label>
+              <input
+                type="text"
+                value={job}
+                onChange={(e) => setJob(e.target.value)}
+                placeholder="예: 회사원, 자영업 등"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                비고 (포상, 직함, 문임 등)
+              </label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="예: 2025년 원로종원 포상, 일수회 총무"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
           </div>
 
           {/* 푸터 액션 */}

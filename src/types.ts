@@ -1,25 +1,30 @@
 export interface Member {
   id: number;
   name: string;
+  nameHanja?: string;    // 한자 성명 (e.g. "森烈", "聖圓")
   branch: string;       // e.g. "사암공파", "호군공파", "참판공파" 등
   branchHanja?: string;  // e.g. "思菴公派"
   generation: number | string; // e.g. 31 (세수)
+  birthYear?: number | string; // 생년 (e.g. 1938, 1973)
   birthOrigin?: string;  // 본향/생년
   zipCode?: string;
   address?: string;
   job?: string;
-  role?: string;         // 직책 (e.g. "재무이사", "회장", "사무총장")
+  role?: string;         // 직책 (e.g. "재무이사", "회장", "용헌종중 회장")
   phone?: string;
   mobile?: string;
   email?: string;
-  notes?: string;
+  notes?: string;        // 비고 (e.g. "2025년 원로종원 포상", "일수회 총무")
   isCustom?: boolean;    // 현장에서 신규 등록된 종친 여부
+  affiliations?: string[]; // 소속 모임 목록 (e.g. ['서울종친회', '용헌종중'])
+  isDuplicate?: boolean;   // [서울/용헌] 등 2개 이상 모임에 중복/겸임 등재 여부
 }
 
 export interface AttendanceRecord {
   id: string;            // 고유 식별자 (UUID or timestamp)
   memberId: number;
   name: string;
+  nameHanja?: string;    // 한자 성명
   branch: string;
   generation: number | string;
   role?: string;

@@ -65,6 +65,9 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
   const [generationFilter, setGenerationFilter] = useState<string>(() => {
     return localStorage.getItem('gosung_desk_generation') || 'all';
   });
+  const [affiliationFilter, setAffiliationFilter] = useState<'all' | 'seoul' | 'yongheon' | 'dual'>(() => {
+    return (localStorage.getItem('gosung_desk_affiliation') as any) || 'all';
+  });
 
   useEffect(() => {
     localStorage.setItem('gosung_desk_branch', selectedBranch);
@@ -85,6 +88,10 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
   useEffect(() => {
     localStorage.setItem('gosung_desk_generation', generationFilter);
   }, [generationFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('gosung_desk_affiliation', affiliationFilter);
+  }, [affiliationFilter]);
 
   const [sponsorshipModalOpen, setSponsorshipModalOpen] = useState<boolean>(false);
   const [isTravelFeeModalOpen, setIsTravelFeeModalOpen] = useState<boolean>(false);
@@ -136,6 +143,15 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
     return members.filter((m) => {
       const record = checkedInMap.get(m.id);
 
+      // 0. 소속 모임 필터
+      if (affiliationFilter === 'seoul') {
+        if (!m.affiliations?.includes('서울종친회')) return false;
+      } else if (affiliationFilter === 'yongheon') {
+        if (!m.affiliations?.includes('용헌종중')) return false;
+      } else if (affiliationFilter === 'dual') {
+        if (!m.isDuplicate && (!m.affiliations || m.affiliations.length <= 1)) return false;
+      }
+
       // 1. 출석 상태 탭 (전체 / 접수완료 / 미접수)
       if (attendanceTab === 'checked_in' && !record) return false;
       if (attendanceTab === 'not_checked_in' && record) return false;
@@ -167,15 +183,17 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
         return false;
       }
 
-      // 6. 검색어 매칭
+      // 6. 검색어 매칭 (이름, 한자명, 전화번호, 비고, 직책 등)
       if (!q) return true;
       if (matchKorean(m.name, q)) return true;
+      if (m.nameHanja && m.nameHanja.includes(q)) return true;
       const cleanPhone = (m.mobile || m.phone || '').replace(/[^0-9]/g, '');
       const cleanQuery = q.replace(/[^0-9]/g, '');
       if (cleanQuery && cleanPhone.includes(cleanQuery)) return true;
       if (m.branch && m.branch.includes(q)) return true;
       if (m.job && m.job.includes(q)) return true;
       if (m.role && m.role.includes(q)) return true;
+      if (m.notes && m.notes.includes(q)) return true;
       if (m.address && m.address.includes(q)) return true;
 
       return false;
@@ -183,6 +201,7 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
   }, [
     members,
     searchQuery,
+    affiliationFilter,
     selectedBranch,
     attendanceTab,
     onlyUnprinted,
@@ -193,6 +212,7 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
 
   const isFiltering = Boolean(
     searchQuery ||
+    affiliationFilter !== 'all' ||
     attendanceTab !== 'all' ||
     onlyUnprinted ||
     onlyExecutives ||
@@ -519,6 +539,54 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
               </button>
             </div>
 
+            {/* 소속 모임 4단 필터 */}
+            <div className="bg-slate-200 p-0.5 rounded-xl flex items-center">
+              <button
+                type="button"
+                onClick={() => setAffiliationFilter('all')}
+                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
+                  affiliationFilter === 'all'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                전체
+              </button>
+              <button
+                type="button"
+                onClick={() => setAffiliationFilter('seoul')}
+                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
+                  affiliationFilter === 'seoul'
+                    ? 'bg-sky-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                서울
+              </button>
+              <button
+                type="button"
+                onClick={() => setAffiliationFilter('yongheon')}
+                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
+                  affiliationFilter === 'yongheon'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                용헌
+              </button>
+              <button
+                type="button"
+                onClick={() => setAffiliationFilter('dual')}
+                className={`px-2 py-1 text-xs font-black rounded-lg transition-all ${
+                  affiliationFilter === 'dual'
+                    ? 'bg-purple-700 text-white shadow-sm'
+                    : 'text-purple-900 hover:bg-purple-100'
+                }`}
+              >
+                서울/용헌
+              </button>
+            </div>
+
             {/* 명찰 미출력자만 토글 */}
             <button
               type="button"
@@ -615,15 +683,39 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
 
                     {/* 종친 기본 정보 */}
                     <div className="space-y-1">
-                    <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-lg font-black text-slate-900 tracking-wide">
                         {member.name}
                       </span>
+                      {member.nameHanja && (
+                        <span className="text-sm font-serif text-slate-500 font-bold">
+                          ({member.nameHanja})
+                        </span>
+                      )}
+                      {member.birthYear && (
+                        <span className="text-xs text-slate-400 font-normal">
+                          '{String(member.birthYear).slice(-2)}년
+                        </span>
+                      )}
                       <span className="text-xs font-bold text-sky-800 bg-sky-100 px-2.5 py-0.5 rounded-full">
                         {member.branch} {member.generation ? `${member.generation}세` : ''}
                       </span>
+                      {/* 소속 뱃지 */}
+                      {member.isDuplicate || (member.affiliations && member.affiliations.length > 1) ? (
+                        <span className="text-xs font-black text-purple-900 bg-purple-100 border border-purple-300 px-2.5 py-0.5 rounded-full shadow-2xs">
+                          서울/용헌
+                        </span>
+                      ) : member.affiliations?.includes('용헌종중') ? (
+                        <span className="text-xs font-bold text-teal-800 bg-teal-100 border border-teal-300 px-2 py-0.5 rounded-full">
+                          용헌종중
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-sky-800 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-full">
+                          서울종친회
+                        </span>
+                      )}
                       {member.role && (
-                        <span className="text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                        <span className="text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
                           <span>{member.role}</span>
                         </span>
                       )}
@@ -651,6 +743,11 @@ export const CheckinDesk: React.FC<CheckinDeskProps> = ({
                         <span className="flex items-center gap-1 text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
                           <Briefcase className="w-3 h-3 text-slate-400" />
                           생업: {member.job.replace(/\n/g, ' ')}
+                        </span>
+                      )}
+                      {member.notes && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200" title={member.notes}>
+                          📌 {member.notes}
                         </span>
                       )}
                     </div>

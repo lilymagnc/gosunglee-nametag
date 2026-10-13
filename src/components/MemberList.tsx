@@ -63,6 +63,9 @@ export const MemberList: React.FC<MemberListProps> = ({
   const [regionFilter, setRegionFilter] = useState<'all' | 'seoul' | 'gyeonggi' | 'other' | 'none'>(() => {
     return (localStorage.getItem('gosung_member_region') as any) || 'all';
   });
+  const [affiliationFilter, setAffiliationFilter] = useState<'all' | 'seoul' | 'yongheon' | 'dual'>(() => {
+    return (localStorage.getItem('gosung_member_affiliation') as any) || 'all';
+  });
 
   useEffect(() => {
     localStorage.setItem('gosung_member_branch', selectedBranch);
@@ -88,6 +91,10 @@ export const MemberList: React.FC<MemberListProps> = ({
     localStorage.setItem('gosung_member_region', regionFilter);
   }, [regionFilter]);
 
+  useEffect(() => {
+    localStorage.setItem('gosung_member_affiliation', affiliationFilter);
+  }, [affiliationFilter]);
+
   const [isUploading, setIsUploading] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<number>>(new Set());
 
@@ -110,6 +117,21 @@ export const MemberList: React.FC<MemberListProps> = ({
     return counts;
   }, [members]);
 
+  // 소속 모임별 인원수 계산
+  const affiliationCounts = useMemo(() => {
+    let seoul = 0;
+    let yongheon = 0;
+    let dual = 0;
+    members.forEach((m) => {
+      const aff = m.affiliations || ['서울종친회'];
+      const isDual = m.isDuplicate || aff.length > 1;
+      if (isDual) dual++;
+      if (aff.includes('서울종친회')) seoul++;
+      if (aff.includes('용헌종중')) yongheon++;
+    });
+    return { seoul, yongheon, dual };
+  }, [members]);
+
   // 존재하는 모든 파 목록 (인원수 내림차순 정렬)
   const branchList = useMemo(() => {
     return Object.keys(branchCounts).sort((a, b) => branchCounts[b] - branchCounts[a]);
@@ -119,6 +141,7 @@ export const MemberList: React.FC<MemberListProps> = ({
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedBranch('전체');
+    setAffiliationFilter('all');
     setAttendanceStatus('all');
     setPrintStatus('all');
     setGenerationFilter('all');
@@ -129,6 +152,7 @@ export const MemberList: React.FC<MemberListProps> = ({
   const isFilterActive =
     searchQuery !== '' ||
     selectedBranch !== '전체' ||
+    affiliationFilter !== 'all' ||
     attendanceStatus !== 'all' ||
     printStatus !== 'all' ||
     generationFilter !== 'all' ||
@@ -139,6 +163,15 @@ export const MemberList: React.FC<MemberListProps> = ({
   const filtered = useMemo(() => {
     const q = searchQuery.trim();
     return members.filter((m) => {
+      // 0. 소속 모임 필터
+      if (affiliationFilter === 'seoul') {
+        if (!m.affiliations?.includes('서울종친회')) return false;
+      } else if (affiliationFilter === 'yongheon') {
+        if (!m.affiliations?.includes('용헌종중')) return false;
+      } else if (affiliationFilter === 'dual') {
+        if (!m.isDuplicate && (!m.affiliations || m.affiliations.length <= 1)) return false;
+      }
+
       // 1. 공파 필터
       if (selectedBranch !== '전체') {
         if ((m.branch || '').trim() !== selectedBranch) return false;
@@ -180,15 +213,17 @@ export const MemberList: React.FC<MemberListProps> = ({
       if (regionFilter === 'other' && (!addr || addr.includes('서울') || addr.includes('경기') || addr.includes('인천'))) return false;
       if (regionFilter === 'none' && addr.trim() !== '') return false;
 
-      // 7. 검색어 (이름, 한글 초성, 전화번호 뒷자리, 직업, 직책, 주소)
+      // 7. 검색어 (이름, 한자명, 한글 초성, 전화번호 뒷자리, 직업, 직책, 비고, 주소)
       if (!q) return true;
       if (matchKorean(m.name, q)) return true;
+      if (m.nameHanja && m.nameHanja.includes(q)) return true;
       const cleanPhone = (m.mobile || m.phone || '').replace(/[^0-9]/g, '');
       const cleanQuery = q.replace(/[^0-9]/g, '');
       if (cleanQuery && cleanPhone.includes(cleanQuery)) return true;
       if (m.branch && m.branch.includes(q)) return true;
       if (m.role && m.role.includes(q)) return true;
       if (m.job && m.job.includes(q)) return true;
+      if (m.notes && m.notes.includes(q)) return true;
       if (m.address && m.address.includes(q)) return true;
 
       return false;
@@ -196,6 +231,7 @@ export const MemberList: React.FC<MemberListProps> = ({
   }, [
     members,
     searchQuery,
+    affiliationFilter,
     selectedBranch,
     attendanceStatus,
     printStatus,
@@ -279,11 +315,18 @@ export const MemberList: React.FC<MemberListProps> = ({
   const handleExportFullList = () => {
     const data = filtered.map((m, idx) => {
       const att = attendanceMap.get(m.id);
+      const affText =
+        m.isDuplicate || (m.affiliations && m.affiliations.length > 1)
+          ? '서울/용헌'
+          : (m.affiliations || ['서울종친회']).join(', ');
       return {
         '순번': idx + 1,
         '성명': m.name,
+        '한자명': m.nameHanja || '',
         '파명': m.branch,
         '세수': m.generation ? `${m.generation}세` : '',
+        '생년': m.birthYear || '',
+        '소속': affText,
         '직책': m.role || '',
         '출석상태': att ? '출석(접수완료)' : '미출석',
         '회비납부': att ? `${att.feeAmount.toLocaleString()}원 (${att.paymentMethod})` : '-',
@@ -291,6 +334,7 @@ export const MemberList: React.FC<MemberListProps> = ({
         '연락처': m.mobile || m.phone || '',
         '거주지/주소': m.address || '',
         '직업': m.job || '',
+        '비고': m.notes || '',
         '등록유형': m.isCustom ? '현장신규' : '기존원부',
       };
     });
@@ -350,7 +394,90 @@ export const MemberList: React.FC<MemberListProps> = ({
         </div>
       </div>
 
-      {/* 2. 공파(파계)별 가로 스크롤 탭 바 */}
+      {/* 2. 소속 종친회/종중별 원클릭 탭 바 */}
+      <div className="bg-white rounded-2xl p-3 shadow-sm border border-slate-200">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-thin">
+          <span className="font-bold text-slate-500 shrink-0 flex items-center gap-1 pl-1 pr-2 border-r border-slate-200">
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" /> 소속 모임
+          </span>
+          <button
+            type="button"
+            onClick={() => setAffiliationFilter('all')}
+            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+              affiliationFilter === 'all'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            전체 종원
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                affiliationFilter === 'all'
+                  ? 'bg-slate-700 text-sky-200'
+                  : 'bg-slate-200 text-slate-700'
+              }`}
+            >
+              {members.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setAffiliationFilter('seoul')}
+            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+              affiliationFilter === 'seoul'
+                ? 'bg-sky-600 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-sky-50 hover:text-sky-700'
+            }`}
+          >
+            서울종친회
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                affiliationFilter === 'seoul' ? 'bg-sky-700 text-white' : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              {affiliationCounts.seoul}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setAffiliationFilter('yongheon')}
+            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+              affiliationFilter === 'yongheon'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-teal-50 hover:text-teal-700'
+            }`}
+          >
+            용헌종중
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                affiliationFilter === 'yongheon' ? 'bg-teal-700 text-white' : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              {affiliationCounts.yongheon}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setAffiliationFilter('dual')}
+            className={`px-3.5 py-1.5 rounded-xl font-black whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 border ${
+              affiliationFilter === 'dual'
+                ? 'bg-purple-700 text-white border-purple-800 shadow-sm'
+                : 'bg-purple-50 text-purple-900 border-purple-300 hover:bg-purple-100'
+            }`}
+          >
+            [서울/용헌] 중복(겸임)
+            <span
+              className={`px-2 py-0.2 rounded-full text-[10px] font-black ${
+                affiliationFilter === 'dual' ? 'bg-purple-900 text-white' : 'bg-purple-200 text-purple-900'
+              }`}
+            >
+              {affiliationCounts.dual}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. 공파(파계)별 가로 스크롤 탭 바 */}
       <div className="bg-white rounded-2xl p-3 shadow-sm border border-slate-200">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-thin">
           <span className="font-bold text-slate-500 shrink-0 flex items-center gap-1 pl-1 pr-2 border-r border-slate-200">
@@ -566,21 +693,21 @@ export const MemberList: React.FC<MemberListProps> = ({
                   </button>
                 </th>
                 <th className="px-3.5 py-2.5 text-center">ID</th>
-                <th className="px-3.5 py-2.5">성명</th>
+                <th className="px-3.5 py-2.5">성명 (한자/생년)</th>
                 <th className="px-3.5 py-2.5">공파</th>
                 <th className="px-3.5 py-2.5 text-center">세수</th>
+                <th className="px-3.5 py-2.5 text-center">소속 모임</th>
                 <th className="px-3.5 py-2.5">직책</th>
                 <th className="px-3.5 py-2.5 text-center">출석 / 명찰</th>
                 <th className="px-3.5 py-2.5">연락처</th>
-                <th className="px-3.5 py-2.5">거주지 주소 / 생업</th>
-                <th className="px-3.5 py-2.5 text-center">구분</th>
+                <th className="px-3.5 py-2.5">거주지 주소 / 생업 / 비고</th>
                 <th className="px-3.5 py-2.5 text-center">수정</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {displayedMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-12 text-center text-slate-400">
+                  <td colSpan={10} className="py-12 text-center text-slate-400">
                     선택하신 필터 조건에 해당하는 종친이 없습니다.
                   </td>
                 </tr>
@@ -610,10 +737,40 @@ export const MemberList: React.FC<MemberListProps> = ({
                         </button>
                       </td>
                       <td className="px-3.5 py-2 text-center text-slate-400 font-mono">{m.id}</td>
-                      <td className="px-3.5 py-2 font-bold text-slate-900 text-sm">{m.name}</td>
+                      <td className="px-3.5 py-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-900 text-sm">{m.name}</span>
+                          {m.nameHanja && (
+                            <span className="text-slate-500 font-serif text-xs font-semibold">({m.nameHanja})</span>
+                          )}
+                          {m.birthYear && (
+                            <span className="text-[10px] text-slate-400 font-normal">'{String(m.birthYear).slice(-2)}년</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-3.5 py-2 text-sky-800 font-semibold">{m.branch || '-'}</td>
                       <td className="px-3.5 py-2 text-center font-bold text-slate-700">
                         {m.generation ? `${m.generation}세` : '-'}
+                      </td>
+                      <td className="px-3.5 py-2 text-center">
+                        {m.isDuplicate || (m.affiliations && m.affiliations.length > 1) ? (
+                          <span className="text-[11px] bg-purple-100 text-purple-900 border border-purple-300 px-2 py-0.5 rounded-full font-black shadow-2xs whitespace-nowrap">
+                            [서울/용헌]
+                          </span>
+                        ) : m.affiliations?.includes('용헌종중') ? (
+                          <span className="text-[11px] bg-teal-100 text-teal-800 border border-teal-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
+                            용헌종중
+                          </span>
+                        ) : (
+                          <span className="text-[11px] bg-sky-100 text-sky-800 border border-sky-300 px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                            서울종친회
+                          </span>
+                        )}
+                        {m.isCustom && (
+                          <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-bold ml-1">
+                            현장
+                          </span>
+                        )}
                       </td>
                       <td className="px-3.5 py-2">
                         {m.role ? (
@@ -642,7 +799,7 @@ export const MemberList: React.FC<MemberListProps> = ({
                         )}
                       </td>
                       <td className="px-3.5 py-2 font-mono text-[11px]">{m.mobile || m.phone || '-'}</td>
-                      <td className="px-3.5 py-2 max-w-[220px]">
+                      <td className="px-3.5 py-2 max-w-[240px]">
                         <div className="truncate text-slate-700" title={m.address || ''}>
                           {m.address || '-'}
                         </div>
@@ -651,16 +808,13 @@ export const MemberList: React.FC<MemberListProps> = ({
                             생업: {m.job.replace(/\n/g, ' ')}
                           </div>
                         )}
-                      </td>
-                      <td className="px-3.5 py-2 text-center">
-                        {m.isCustom ? (
-                          <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">
-                            현장신규
-                          </span>
-                        ) : (
-                          <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
-                            원부
-                          </span>
+                        {m.notes && (
+                          <div
+                            className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 rounded px-1.5 py-0.5 mt-1 inline-block truncate max-w-full"
+                            title={m.notes}
+                          >
+                            📌 {m.notes}
+                          </div>
                         )}
                       </td>
                       <td className="px-3.5 py-2 text-center">

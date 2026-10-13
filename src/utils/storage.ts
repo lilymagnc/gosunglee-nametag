@@ -168,6 +168,21 @@ export function loadMembers(): Member[] {
     if (data) {
       const parsed: Member[] = JSON.parse(data);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // 기존 구버전 캐시(1,168명 또는 affiliations 미보유) 자동 마이그레이션
+        const needsUpgrade = parsed.length < DEFAULT_MEMBERS.length || !parsed.some((m) => m.affiliations && m.affiliations.includes('용헌종중'));
+        if (needsUpgrade) {
+          // 사용자가 현장에서 추가한 신규 종친(isCustom) 유지
+          const customMembers = parsed.filter((m) => m.isCustom);
+          const combined = [...DEFAULT_MEMBERS];
+          customMembers.forEach((cm) => {
+            if (!combined.some((m) => m.id === cm.id)) {
+              combined.push(cm);
+            }
+          });
+          saveMembers(combined);
+          return combined;
+        }
+
         // 이성원 종친 연락처 보정 마이그레이션
         parsed.forEach((m) => {
           if (m.name === '이성원' && m.mobile && m.mobile.includes('9206')) {

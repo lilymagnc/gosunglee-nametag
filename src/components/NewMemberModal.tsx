@@ -46,6 +46,7 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
   onSelectExistingMember,
 }) => {
   const [name, setName] = useState('');
+  const [nameHanja, setNameHanja] = useState('');
   const [branch, setBranch] = useState<string>('사암공파');
   const [customBranch, setCustomBranch] = useState('');
   const [generation, setGeneration] = useState<string>('31');
@@ -56,6 +57,18 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
   const [feeAmount, setFeeAmount] = useState<number>(20000);
   const [paymentMethod, setPaymentMethod] = useState<'현금' | '계좌이체' | '카드' | '기타' | '미납'>('현금');
   const [notes, setNotes] = useState('');
+  const [affiliations, setAffiliations] = useState<string[]>(['서울종친회']);
+
+  const toggleAffiliation = (group: string) => {
+    setAffiliations((prev) => {
+      if (prev.includes(group)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((g) => g !== group);
+      } else {
+        return [...prev, group];
+      }
+    });
+  };
 
   // 용지 및 슬롯 선택 상태 (직전 전역 설정 100% 기억)
   const [paperSize, setPaperSize] = useState<PaperSize>(settings.paperSize || 'formtec_3114');
@@ -133,12 +146,16 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
     const newMember: Member = {
       id: memberId,
       name: name.trim(),
+      nameHanja: nameHanja.trim() || undefined,
       branch: effectiveBranch,
       generation: generation.trim() ? parseInt(generation, 10) || generation.trim() : '',
       role: role.trim(),
       job: job.trim(),
       mobile: mobile.trim(),
       address: address.trim(),
+      notes: notes.trim() || undefined,
+      affiliations,
+      isDuplicate: affiliations.length > 1,
       isCustom: true,
     };
 
@@ -146,6 +163,7 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
       id: `new_${memberId}`,
       memberId,
       name: name.trim(),
+      nameHanja: nameHanja.trim() || undefined,
       branch: effectiveBranch,
       generation: newMember.generation,
       role: role.trim(),
@@ -206,11 +224,11 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
         <div className="p-5 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-5 overflow-y-auto flex-1">
           {/* 좌측 입력 폼 (7 cols) */}
           <div className="md:col-span-7 space-y-3.5">
-            {/* 1. 성명 및 세수 */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* 1. 성명, 한자명, 세수 */}
+            <div className="grid grid-cols-3 gap-2.5">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  성명 <span className="text-red-500">*</span>
+                  성명 (한글) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -224,9 +242,22 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
+                  한자명 (名)
+                </label>
+                <input
+                  type="text"
+                  placeholder="예: 東光"
+                  value={nameHanja}
+                  onChange={(e) => setNameHanja(e.target.value)}
+                  className="w-full px-3 py-2 text-sm font-serif border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   세수 (대)
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <input
                     type="number"
                     placeholder="예: 31"
@@ -236,6 +267,38 @@ export const NewMemberModal: React.FC<NewMemberModalProps> = ({
                   />
                   <span className="text-xs text-slate-500 font-bold shrink-0">세</span>
                 </div>
+              </div>
+            </div>
+
+            {/* 소속 모임 선택 */}
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-bold text-slate-700">소속 모임 (복수 선택 가능)</span>
+                {affiliations.length > 1 && (
+                  <span className="text-[10px] font-black text-purple-800 bg-purple-100 border border-purple-300 px-2 py-0.2 rounded-full">
+                    [서울/용헌] 겸임
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-xs font-bold text-slate-700">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={affiliations.includes('서울종친회')}
+                    onChange={() => toggleAffiliation('서울종친회')}
+                    className="rounded text-sky-600 focus:ring-sky-500 w-4 h-4"
+                  />
+                  서울종친회
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={affiliations.includes('용헌종중')}
+                    onChange={() => toggleAffiliation('용헌종중')}
+                    className="rounded text-teal-600 focus:ring-teal-500 w-4 h-4"
+                  />
+                  용헌종중
+                </label>
               </div>
             </div>
 

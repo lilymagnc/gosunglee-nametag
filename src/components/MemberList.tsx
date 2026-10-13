@@ -386,7 +386,7 @@ export const MemberList: React.FC<MemberListProps> = ({
           <button
             onClick={onResetToDefault}
             className="px-3 py-2 text-xs text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 flex items-center gap-1"
-            title="초기 구글 시트 1,168명 데이터로 복원"
+            title="통합 마스터 1,511명 데이터로 복원"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             초기 복원

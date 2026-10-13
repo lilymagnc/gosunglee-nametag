@@ -9,10 +9,13 @@ const SUPABASE_ANON_KEY = meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1N
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const defaultMemberMap = new Map<number, Member>();
+DEFAULT_MEMBERS.forEach((m) => defaultMemberMap.set(m.id, m));
+
 // 1. 회원 명부 조회
 export async function loadMembersFromSupabase(): Promise<Member[]> {
   try {
-    // Supabase는 한 번에 최대 1000개 반환하므로 전체(1168명 이상) 페이징 조회
+    // Supabase는 한 번에 최대 1000개 반환하므로 전체(1511명 이상) 페이징 조회
     let allMembers: Member[] = [];
     let from = 0;
     const pageSize = 1000;
@@ -31,18 +34,28 @@ export async function loadMembersFromSupabase(): Promise<Member[]> {
 
       if (!data || data.length === 0) break;
 
-      const mapped: Member[] = data.map((row: any) => ({
-        id: Number(row.id),
-        branch: row.branch || '',
-        generation: row.generation ?? '',
-        name: row.name,
-        address: row.address || '',
-        phone: row.phone || '',
-        mobile: row.mobile || '',
-        notes: row.notes || '',
-        role: row.role || '',
-        job: row.job || ''
-      }));
+      const mapped: Member[] = data.map((row: any) => {
+        const id = Number(row.id);
+        const base = defaultMemberMap.get(id);
+        return {
+          id,
+          name: row.name || base?.name || '',
+          nameHanja: base?.nameHanja,
+          branch: row.branch || base?.branch || '',
+          branchHanja: base?.branchHanja,
+          generation: row.generation ?? base?.generation ?? '',
+          birthYear: base?.birthYear,
+          address: row.address || base?.address || '',
+          phone: row.phone || base?.phone || '',
+          mobile: row.mobile || base?.mobile || '',
+          notes: row.notes || base?.notes || '',
+          role: row.role || base?.role || '',
+          job: row.job || base?.job || '',
+          isCustom: base ? base.isCustom : (id > 100000 || false),
+          affiliations: base?.affiliations || ['서울종친회'],
+          isDuplicate: base ? Boolean(base.isDuplicate) : false,
+        };
+      });
 
       allMembers = allMembers.concat(mapped);
       if (data.length < pageSize) break;
@@ -50,19 +63,21 @@ export async function loadMembersFromSupabase(): Promise<Member[]> {
     }
 
     if (allMembers.length > 0) {
+      // DEFAULT_MEMBERS에 있는 모든 종원이 누락되지 않도록 보장
+      const existingIds = new Set(allMembers.map((m) => m.id));
+      DEFAULT_MEMBERS.forEach((dm) => {
+        if (!existingIds.has(dm.id)) {
+          allMembers.push(dm);
+        }
+      });
+      allMembers.sort((a, b) => a.id - b.id);
       return allMembers;
     }
   } catch (err) {
     console.warn('Network error loading members from Supabase:', err);
   }
 
-  // 폴백: 로컬 스토리지 또는 기본 데이터
-  const saved = localStorage.getItem('gosunglee_members');
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch {}
-  }
+  // 폴백: DEFAULT_MEMBERS
   return DEFAULT_MEMBERS;
 }
 

@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </h1>
               <p className="text-[11px] text-slate-400">
-                1,168명 원부 연동 • {settings.paperSize === 'formtec_3114' ? '폼텍 8칸' : settings.paperSize === 'label_90x60' ? '90×60 감열' : '80×60 감열'} • 하단: {settings.footerText || '固 城 李 氏 서 울 宗 親 會'}
+                1,511명 통합 원부 연동 (서울·용헌) • {settings.paperSize === 'formtec_3114' ? '폼텍 8칸' : settings.paperSize === 'label_90x60' ? '90×60 감열' : '80×60 감열'} • 하단: {settings.footerText || '固 城 李 氏 서 울 宗 親 會'}
               </p>
             </div>
           </div>

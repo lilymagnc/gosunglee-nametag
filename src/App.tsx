@@ -479,10 +479,10 @@ export const App: React.FC = () => {
 
   // [7] 주소록 원부 초기화
   const handleResetMembersToDefault = () => {
-    if (confirm('주소록을 초기 구글 시트 원본(1,168명)으로 되돌리시겠습니까?')) {
+    if (confirm('주소록을 통합 마스터 원본(1,511명: 서울·용헌)으로 되돌리시겠습니까?')) {
       setMembers(DEFAULT_MEMBERS);
       saveMembers(DEFAULT_MEMBERS);
-      alert('초기 주소록 데이터로 복원되었습니다.');
+      alert('통합 주소록 데이터(1,511명)로 복원되었습니다.');
     }
   };
 
